@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
-export default defineConfig({
+const config = {
   plugins: [react()],
   server: {
     proxy: {
@@ -10,4 +9,10 @@ export default defineConfig({
       '/api': 'http://localhost:8787',
     },
   },
-})
+  test: {
+    environmentMatchGlobs: [["src/ui/**/*.test.tsx", "jsdom"]],
+  },
+}
+
+// https://vite.dev/config/
+export default defineConfig(config)
