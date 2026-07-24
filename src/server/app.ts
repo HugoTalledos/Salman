@@ -3,8 +3,8 @@ import { z } from "zod";
 import { ARCHIVO_POR_TARGET, compilarClase } from "../compiler/compilar";
 import { crearClase, obtenerScaffold, scaffolds } from "../scaffolds";
 import { ClaseSalman } from "../schema/clase";
-import { construirSistema } from "./asistente";
 import { obtenerProveedorLLM, type ProveedorLLM } from "./llm";
+import { obtenerRespuestaAsistente } from "./respuesta-asistente";
 import {
   crearProyecto,
   ErrorStore,
@@ -203,11 +203,8 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
         : { rol, contenido },
     );
     try {
-      const respuesta = await proveedor.completar({
-        sistema: construirSistema(clase),
-        mensajes: mensajesLLM,
-      });
-      return c.json({ respuesta });
+      const respuesta = await obtenerRespuestaAsistente(proveedor, clase, mensajesLLM);
+      return c.json(respuesta);
     } catch (err) {
       console.error("Error del proveedor LLM:", err);
       return c.json(

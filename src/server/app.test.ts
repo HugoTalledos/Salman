@@ -231,14 +231,17 @@ describe("Asistente Salman", () => {
       headers: { "content-type": "application/json" },
     });
 
-  it("entrega el fuente y el criterio pedagógico al proveedor y devuelve su respuesta", async () => {
+  it("entrega el fuente y el criterio pedagógico al proveedor y devuelve la respuesta estructurada", async () => {
     const sistemas: string[] = [];
     const conFake = crearApp(base, {
       llm: {
         id: "fake",
         async completar({ sistema }) {
           sistemas.push(sistema);
-          return "Sugiero agregar una fase de cierre.";
+          return JSON.stringify({
+            tipo: "informativa",
+            mensaje: "La clase está bien secuenciada.",
+          });
         },
       },
     });
@@ -246,11 +249,86 @@ describe("Asistente Salman", () => {
     const res = await preguntar(conFake, carpeta);
     expect(res.status).toBe(200);
     expect(await json<object>(res)).toEqual({
-      respuesta: "Sugiero agregar una fase de cierre.",
+      tipo: "informativa",
+      mensaje: "La clase está bien secuenciada.",
     });
     expect(sistemas[0]).toContain("Los estados del agua");
     expect(sistemas[0]).toContain("socioconstructivista");
     expect(sistemas[0]).toContain("NUNCA asumas que existe una fase");
+  });
+
+  it("devuelve las tres acciones propuestas por el modelo", async () => {
+    const conFake = crearApp(base, {
+      llm: {
+        id: "fake",
+        async completar() {
+          return JSON.stringify({
+            tipo: "accionable",
+            mensaje: "Estas mejoras harán más explícito el cierre.",
+            acciones: [
+              {
+                id: "1a2b3c4d-0000-4000-8000-000000000010",
+                titulo: "Recuperar aprendizajes",
+                beneficio: "Consolida lo aprendido.",
+                ubicacion: {
+                  tipo: "raiz",
+                  anclaId: "1a2b3c4d-0000-4000-8000-000000000001",
+                  posicion: "despues",
+                },
+                bloques: [
+                  {
+                    id: "1a2b3c4d-0000-4000-8000-000000000011",
+                    tipo: "texto",
+                    target: "material",
+                    contenido: "Escribe un aprendizaje que conservas.",
+                  },
+                ],
+              },
+              {
+                id: "1a2b3c4d-0000-4000-8000-000000000012",
+                titulo: "Cerrar en parejas",
+                beneficio: "Favorece la verbalización.",
+                ubicacion: {
+                  tipo: "raiz",
+                  anclaId: "1a2b3c4d-0000-4000-8000-000000000001",
+                  posicion: "antes",
+                },
+                bloques: [
+                  {
+                    id: "1a2b3c4d-0000-4000-8000-000000000013",
+                    tipo: "nota",
+                    target: "guia",
+                    contenido: "Escucha dos conclusiones por pareja.",
+                  },
+                ],
+              },
+              {
+                id: "1a2b3c4d-0000-4000-8000-000000000014",
+                titulo: "Anticipar la siguiente clase",
+                beneficio: "Da continuidad al proceso.",
+                ubicacion: {
+                  tipo: "raiz",
+                  anclaId: "1a2b3c4d-0000-4000-8000-000000000001",
+                  posicion: "despues",
+                },
+                bloques: [
+                  {
+                    id: "1a2b3c4d-0000-4000-8000-000000000015",
+                    tipo: "texto",
+                    target: "material",
+                    contenido: "Formula una pregunta para la próxima clase.",
+                  },
+                ],
+              },
+            ],
+          });
+        },
+      },
+    });
+    const carpeta = await crearProyecto(base, claseEjemplo);
+    const res = await preguntar(conFake, carpeta);
+    expect(res.status).toBe(200);
+    expect((await json<{ acciones: unknown[] }>(res)).acciones).toHaveLength(3);
   });
 
   it("anota los bloques señalados dentro del turno del profesor", async () => {
@@ -260,7 +338,7 @@ describe("Asistente Salman", () => {
         id: "fake",
         async completar({ mensajes }) {
           recibidos.push(mensajes);
-          return "ok";
+          return JSON.stringify({ tipo: "informativa", mensaje: "ok" });
         },
       },
     });
@@ -318,5 +396,17 @@ describe("Asistente Salman", () => {
     const res = await preguntar(roto, carpeta);
     expect(res.status).toBe(502);
     expect((await json<{ error: string }>(res)).error).toContain("sin cuota");
+  });
+
+  it("si los dos intentos no tienen respuesta estructurada válida responde 502", async () => {
+    const invalido = crearApp(base, {
+      llm: { id: "fake", completar: async () => "no es JSON" },
+    });
+    const carpeta = await crearProyecto(base, claseEjemplo);
+    const res = await preguntar(invalido, carpeta);
+    expect(res.status).toBe(502);
+    expect((await json<{ error: string }>(res)).error).toContain(
+      "respuesta estructurada válida",
+    );
   });
 });

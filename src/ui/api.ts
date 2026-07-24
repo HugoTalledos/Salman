@@ -1,4 +1,5 @@
 import type { ClaseSalman } from "../schema/clase";
+import type { RespuestaAsistente } from "../asistente/acciones";
 
 /** Cliente de la API local. La UI nunca toca el filesystem: todo pasa por aquí. */
 
@@ -87,13 +88,16 @@ export const api = {
     return (await json<{ archivos: string[] }>(r)).archivos;
   },
 
-  async asistente(carpeta: string, mensajes: MensajeAsistente[]): Promise<string> {
+  async asistente(
+    carpeta: string,
+    mensajes: MensajeAsistente[],
+  ): Promise<RespuestaAsistente> {
     const r = await fetch(`/api/proyectos/${enc(carpeta)}/asistente`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ mensajes }),
     });
-    return (await json<{ respuesta: string }>(r)).respuesta;
+    return json<RespuestaAsistente>(r);
   },
 
   async guardarProyecto(carpeta: string, clase: ClaseSalman): Promise<ClaseSalman> {
