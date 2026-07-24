@@ -12,6 +12,51 @@ export function construirSistema(clase: ClaseSalman): string {
         clase.scaffold.modelo ? `, modelo pedagógico: ${clase.scaffold.modelo}` : ""
       }${clase.scaffold.metodo ? `, método: ${clase.scaffold.metodo}` : ""}. Razona tus sugerencias con ese criterio pedagógico.`
     : "La clase se creó en blanco, sin scaffold: no asumas ningún modelo pedagógico; pregunta si hace falta.";
+  const anclaEjemplo = clase.bloques[0]?.id;
+  const ejemploAccionable = anclaEjemplo
+    ? JSON.stringify({
+      tipo: "accionable",
+      mensaje: "Puedes elegir una de estas opciones.",
+      acciones: [
+        {
+          id: "00000000-0000-4000-8000-000000000001",
+          titulo: "Pregunta inicial",
+          beneficio: "Activa los saberes previos.",
+          ubicacion: { tipo: "raiz", anclaId: anclaEjemplo, posicion: "despues" },
+          bloques: [{
+            id: "00000000-0000-4000-8000-000000000011",
+            tipo: "texto",
+            target: "ambos",
+            contenido: "Escribe una pregunta inicial sobre el tema.",
+          }],
+        },
+        {
+          id: "00000000-0000-4000-8000-000000000002",
+          titulo: "Nota de observación",
+          beneficio: "Orienta la mediación del profesor.",
+          ubicacion: { tipo: "raiz", anclaId: anclaEjemplo, posicion: "despues" },
+          bloques: [{
+            id: "00000000-0000-4000-8000-000000000012",
+            tipo: "nota",
+            target: "guia",
+            contenido: "Observa qué ideas previas aparecen.",
+          }],
+        },
+        {
+          id: "00000000-0000-4000-8000-000000000003",
+          titulo: "Ticket de salida",
+          beneficio: "Comprueba la comprensión individual.",
+          ubicacion: { tipo: "raiz", anclaId: anclaEjemplo, posicion: "despues" },
+          bloques: [{
+            id: "00000000-0000-4000-8000-000000000013",
+            tipo: "texto",
+            target: "material",
+            contenido: "Anota una idea que aprendiste hoy.",
+          }],
+        },
+      ],
+    })
+    : "No hay anclas en el fuente: responde de forma informativa hasta que el profesor agregue un bloque.";
 
   return `Eres el Asistente Salman, integrado en Salman: un entorno donde profesores de primaria diseñan, construyen y compilan sus clases (como un IDE para docentes).
 
@@ -25,6 +70,11 @@ Reglas de comportamiento:
 - Cuando sugieras contenido para un bloque, indica a qué documento debería ir (guía, material del alumno o ambos) y en qué parte de la clase encajaría.
 - No inventes datos sobre la clase: básate en el fuente que tienes abajo. Si la pregunta no tiene que ver con esta clase ni con pedagogía, redirige amablemente.
 - Si un mensaje del profesor empieza con «[El profesor señala los bloques con id: …]», esos ids corresponden a bloques del fuente JSON de abajo: su pregunta se refiere específicamente a esos bloques. Céntrate en ellos y menciónalos por su contenido (p. ej. "tu nota de facilitación del Desarrollo"), nunca por su id.
+
+Contrato de respuesta estructurada:
+- Clasifica cada respuesta como "informativa" o "accionable". Devuelve únicamente JSON válido, sin Markdown ni explicación.
+- Una respuesta informativa no propone cambios: ejemplo válido: {"tipo":"informativa","mensaje":"La secuencia es clara para el grupo."}.
+- Una respuesta accionable propone exactamente tres alternativas significativamente diferentes. Usa solo ids presentes en el fuente como anclas; nunca pongas una fase dentro de otra fase y nunca edites, elimines ni muevas bloques existentes. Ejemplo válido: ${ejemploAccionable}.
 
 Este es el fuente actual de la clase (clase.salman):
 
