@@ -160,6 +160,12 @@
   padding: 20px 32px 120px;
 }
 
+.editor-centro .bn-block-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .divisor {
   cursor: col-resize;
   background: transparent;
@@ -448,6 +454,7 @@ body.redimensionando {
   color: var(--texto);
   padding: 4px 8px;
   border-radius: 6px;
+  text-align: center;
 }
 
 .editor-titulo:hover,
