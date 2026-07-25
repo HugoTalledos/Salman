@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { Bloque, ClaseSalman } from "../schema/clase";
-import { claseEjemplo } from "../testing/fixtures";
-import { compilarClase } from "./compilar";
-import { mdAHtml } from "./markdown";
+import { claseEjemplo } from "../../../../testing/fixtures";
+import type { Bloque, ClaseSalman } from "../../domain/entity/Clase";
+import { ARCHIVO_POR_TARGET, CompiladorHtml } from "./CompiladorHtml";
+import { mdAHtml } from "./Markdown";
 
 const id = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
+const compilador = new CompiladorHtml();
 
 describe("mdAHtml", () => {
   it("renderiza párrafos, listas y estilos inline", () => {
@@ -29,9 +30,16 @@ describe("mdAHtml", () => {
   });
 });
 
-describe("compilarClase — separación de targets", () => {
-  const guia = compilarClase(claseEjemplo, "guia");
-  const material = compilarClase(claseEjemplo, "material");
+describe("CompiladorHtml — separación de targets", () => {
+  const guia = compilador.compilar(claseEjemplo, "guia");
+  const material = compilador.compilar(claseEjemplo, "material");
+
+  it("conserva los nombres públicos de los dos artefactos", () => {
+    expect(ARCHIVO_POR_TARGET).toEqual({
+      guia: "guia-del-profesor.html",
+      material: "material-del-alumno.html",
+    });
+  });
 
   it("las notas de facilitación aparecen SOLO en la guía", () => {
     expect(guia).toContain("¿dónde han visto hielo fuera del congelador?");
@@ -43,7 +51,6 @@ describe("compilarClase — separación de targets", () => {
     expect(material).toContain("Dibuja el agua en sus tres formas.");
     expect(guia).toContain("Repartir material del alumno:");
     expect(guia).toContain("Dibuja el agua en sus tres formas.");
-    // en la guía va como indicación, no como contenido del documento
     expect(guia).toMatch(/<aside class="reparto">[^<]*📄/);
   });
 
@@ -61,17 +68,17 @@ describe("compilarClase — separación de targets", () => {
   });
 });
 
-describe("compilarClase — estructura arbitraria", () => {
+describe("CompiladorHtml — estructura arbitraria", () => {
   it("compila una clase sin ningún bloque", () => {
     for (const doc of ["guia", "material"] as const) {
-      const html = compilarClase({ ...claseEjemplo, bloques: [] }, doc);
+      const html = compilador.compilar({ ...claseEjemplo, bloques: [] }, doc);
       expect(html).toContain("<!doctype html>");
       expect(html).toContain("aún no tiene contenido");
     }
   });
 
   it("compila una clase en blanco (sin scaffold, sin metadatos)", () => {
-    const html = compilarClase(
+    const html = compilador.compilar(
       { ...claseEjemplo, scaffold: null, metadatos: {}, bloques: [] },
       "guia",
     );
@@ -90,7 +97,7 @@ describe("compilarClase — estructura arbitraria", () => {
         ],
       },
     ];
-    const material = compilarClase({ ...claseEjemplo, bloques }, "material");
+    const material = compilador.compilar({ ...claseEjemplo, bloques }, "material");
     expect(material).not.toContain("Solo para la guía");
     expect(material).toContain("Sobrevivo solo.");
   });
@@ -99,12 +106,12 @@ describe("compilarClase — estructura arbitraria", () => {
     const bloques: Bloque[] = [
       { id: id(3), tipo: "fase", target: "ambos", titulo: "", bloques: [] },
     ];
-    const html = compilarClase({ ...claseEjemplo, bloques }, "guia");
+    const html = compilador.compilar({ ...claseEjemplo, bloques }, "guia");
     expect(html).toContain("(fase sin título)");
   });
 });
 
-describe("compilarClase — imágenes y seguridad", () => {
+describe("CompiladorHtml — imágenes y seguridad", () => {
   const conImagen: ClaseSalman = {
     ...claseEjemplo,
     bloques: [
@@ -120,13 +127,13 @@ describe("compilarClase — imágenes y seguridad", () => {
   };
 
   it("reescribe la ruta de la imagen relativa al artefacto (vive en recursos/)", () => {
-    const html = compilarClase(conImagen, "material");
+    const html = compilador.compilar(conImagen, "material");
     expect(html).toContain('<img src="mapa.png" alt="Mapa">');
     expect(html).toContain("<figcaption>El ciclo del agua</figcaption>");
   });
 
   it("escapa el título y los metadatos", () => {
-    const html = compilarClase(
+    const html = compilador.compilar(
       { ...claseEjemplo, titulo: 'Clase <img src=x onerror="1">' },
       "guia",
     );
