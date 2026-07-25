@@ -2,7 +2,7 @@ import type { CrearProyecto } from "../useCase/CrearProyecto";
 import { ScaffoldNoExiste } from "../../domain/error/ErroresProyecto";
 import type { ProyectoRepository } from "../../domain/repository/ProyectoRepository";
 import { crearClase } from "../../domain/service/CrearClase";
-import type { CatalogoScaffolds } from "../../infrastructure/scaffold/CatalogoScaffolds";
+import type { CatalogoScaffolds } from "../port/CatalogoScaffolds";
 
 export class CrearProyectoImpl implements CrearProyecto {
   private readonly repositorio: ProyectoRepository;
@@ -20,10 +20,10 @@ export class CrearProyectoImpl implements CrearProyecto {
     titulo: string;
     scaffoldId: string | null;
   }) {
-    const scaffold = entrada.scaffoldId
+    const scaffold = entrada.scaffoldId !== null
       ? this.catalogoScaffolds.obtener(entrada.scaffoldId) ?? null
       : null;
-    if (entrada.scaffoldId && !scaffold) {
+    if (entrada.scaffoldId !== null && !scaffold) {
       throw new ScaffoldNoExiste(`No existe el scaffold ${entrada.scaffoldId}`);
     }
 

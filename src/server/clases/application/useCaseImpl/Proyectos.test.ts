@@ -7,7 +7,7 @@ import type {
   ProyectoRepository,
   ResumenProyecto,
 } from "../../domain/repository/ProyectoRepository";
-import type { CatalogoScaffolds } from "../../infrastructure/scaffold/CatalogoScaffolds";
+import type { CatalogoScaffolds } from "../port/CatalogoScaffolds";
 import { CrearProyectoImpl } from "./CrearProyectoImpl";
 import { GuardarProyectoImpl } from "./GuardarProyectoImpl";
 import { ListarProyectosImpl } from "./ListarProyectosImpl";
@@ -115,6 +115,17 @@ describe("CrearProyectoImpl", () => {
 
     await expect(
       crearProyecto.ejecutar({ titulo: "Fracciones", scaffoldId: "desconocido" }),
+    ).rejects.toBeInstanceOf(ScaffoldNoExiste);
+  });
+
+  it("rechaza un identificador de scaffold vacío", async () => {
+    const crearProyecto = new CrearProyectoImpl(
+      new RepositorioFake(),
+      catalogoFake(undefined),
+    );
+
+    await expect(
+      crearProyecto.ejecutar({ titulo: "Fracciones", scaffoldId: "" }),
     ).rejects.toBeInstanceOf(ScaffoldNoExiste);
   });
 });
