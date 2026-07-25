@@ -80,6 +80,7 @@ function renderizar(opciones?: {
   render(
     <AccionesAsistente
       acciones={acciones}
+      validar={() => ({ ok: true })}
       describir={opciones?.describir ?? (() => "Al final de la fase «Inicio»")}
       aplicar={aplicar}
     />,

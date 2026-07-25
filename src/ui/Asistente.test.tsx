@@ -77,7 +77,9 @@ const documento: BloqueEditor[] = [{
   children: [],
 }];
 
-function renderizarAsistente() {
+function renderizarAsistente(
+  documentoActual: () => BloqueEditor[] = () => documento,
+) {
   const aplicarAccionDocumento = vi.fn(() => ({ ok: true } as const));
   const limpiarAdjuntos = vi.fn();
   render(
@@ -86,7 +88,7 @@ function renderizarAsistente() {
       adjuntos={[]}
       quitarAdjunto={vi.fn()}
       limpiarAdjuntos={limpiarAdjuntos}
-      documentoActual={() => documento}
+      documentoActual={documentoActual}
       aplicarAccionDocumento={aplicarAccionDocumento}
     />,
   );
@@ -138,5 +140,82 @@ describe("Asistente", () => {
     expect(aplicarAccionDocumento).toHaveBeenCalledWith(
       respuestaAccionable.acciones[0],
     );
+  });
+
+  it("bloquea desde la vista previa una propuesta con un ID del documento vivo", async () => {
+    const user = userEvent.setup();
+    const respuesta: RespuestaAsistente = {
+      ...respuestaAccionable,
+      acciones: [
+        {
+          ...respuestaAccionable.acciones[0],
+          bloques: [{
+            ...respuestaAccionable.acciones[0].bloques[0],
+            id: documento[0].id,
+          }],
+        },
+        respuestaAccionable.acciones[1],
+        respuestaAccionable.acciones[2],
+      ],
+    };
+    vi.spyOn(api, "asistente").mockResolvedValueOnce(respuesta);
+    const { aplicarAccionDocumento } = renderizarAsistente();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Mensaje para el asistente" }),
+      "Propón un cierre",
+    );
+    await user.click(screen.getByTitle("Enviar"));
+    await screen.findByText(respuesta.mensaje);
+    await user.click(screen.getAllByRole("button", { name: "Ver propuesta" })[0]);
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "La propuesta repite un ID del documento.",
+    );
+    expect(screen.getByText("Resume la idea principal.")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Agregar al documento" })).toBeNull();
+    expect(aplicarAccionDocumento).not.toHaveBeenCalled();
+  });
+
+  it("bloquea desde la vista previa los IDs repetidos dentro de la propuesta", async () => {
+    const user = userEvent.setup();
+    const idRepetido = respuestaAccionable.acciones[0].bloques[0].id;
+    const respuesta: RespuestaAsistente = {
+      ...respuestaAccionable,
+      acciones: [
+        {
+          ...respuestaAccionable.acciones[0],
+          bloques: [
+            respuestaAccionable.acciones[0].bloques[0],
+            {
+              id: idRepetido,
+              tipo: "nota",
+              target: "guia",
+              contenido: "Observa qué ideas aparecen.",
+            },
+          ],
+        },
+        respuestaAccionable.acciones[1],
+        respuestaAccionable.acciones[2],
+      ],
+    };
+    vi.spyOn(api, "asistente").mockResolvedValueOnce(respuesta);
+    const { aplicarAccionDocumento } = renderizarAsistente();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Mensaje para el asistente" }),
+      "Propón un cierre",
+    );
+    await user.click(screen.getByTitle("Enviar"));
+    await screen.findByText(respuesta.mensaje);
+    await user.click(screen.getAllByRole("button", { name: "Ver propuesta" })[0]);
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "La propuesta contiene IDs duplicados.",
+    );
+    expect(screen.getByText("Resume la idea principal.")).not.toBeNull();
+    expect(screen.getByText("Observa qué ideas aparecen.")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Agregar al documento" })).toBeNull();
+    expect(aplicarAccionDocumento).not.toHaveBeenCalled();
   });
 });

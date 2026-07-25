@@ -38,6 +38,34 @@ describe("RespuestaAsistenteSchema", () => {
     ).toThrow();
   });
 
+  it("rechaza una acción sin bloques para agregar", () => {
+    expect(() =>
+      RespuestaAsistenteSchema.parse({
+        tipo: "accionable",
+        mensaje: "Opciones",
+        acciones: [
+          { ...accion(1), bloques: [] },
+          accion(2),
+          accion(3),
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("rechaza IDs repetidos entre las alternativas", () => {
+    expect(() =>
+      RespuestaAsistenteSchema.parse({
+        tipo: "accionable",
+        mensaje: "Opciones",
+        acciones: [
+          accion(1),
+          { ...accion(2), id: accion(1).id },
+          accion(3),
+        ],
+      }),
+    ).toThrow();
+  });
+
   it("rechaza imágenes y fases ubicadas dentro de una fase", () => {
     expect(() =>
       RespuestaAsistenteSchema.parse({

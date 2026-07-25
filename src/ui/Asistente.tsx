@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AccionAsistente } from "../asistente/acciones";
 import type { BloqueEditor } from "../mapping/mapeo";
 import { AccionesAsistente } from "./AccionesAsistente";
-import { describirUbicacion } from "./aplicarAccion";
+import { describirUbicacion, validarAccion } from "./aplicarAccion";
 import { api, type MensajeAsistente } from "./api";
 import type { BloqueAdjunto } from "./bloques";
 
@@ -114,6 +114,7 @@ export function Asistente({
             {m.rol === "asistente" && m.acciones && (
               <AccionesAsistente
                 acciones={m.acciones}
+                validar={(accion) => validarAccion(documentoActual(), accion)}
                 describir={(accion) => describirUbicacion(documentoActual(), accion)}
                 aplicar={aplicarAccionDocumento}
               />

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { AccionAsistente } from "../asistente/acciones";
 import { editorDesdeClase } from "../mapping/mapeo";
 import { claseEjemplo } from "../testing/fixtures";
-import { aplicarAccion, describirUbicacion } from "./aplicarAccion";
+import {
+  aplicarAccion,
+  describirUbicacion,
+  validarAccion,
+} from "./aplicarAccion";
 
 const ids = {
   accion: "2a2b3c4d-0000-4000-8000-000000000001",
@@ -54,6 +58,26 @@ describe("aplicarAccion", () => {
       expect(resultado.bloques).toContainEqual(antes[1]);
     }
     expect(documento).toEqual(antes);
+  });
+
+  it("inserta antes de un ancla de raíz", () => {
+    const documento = editorDesdeClase(claseEjemplo.bloques);
+    const propuesta = accion({
+      tipo: "raiz",
+      anclaId: documento[0].id,
+      posicion: "antes",
+    });
+
+    const resultado = aplicarAccion(documento, propuesta);
+
+    expect(resultado).toMatchObject({ ok: true });
+    if (resultado.ok) {
+      expect(resultado.bloques.map((bloque) => bloque.id)).toEqual([
+        ids.texto,
+        documento[0].id,
+        documento[1].id,
+      ]);
+    }
   });
 
   it("inserta al inicio de una fase", () => {
@@ -165,6 +189,46 @@ describe("aplicarAccion", () => {
     expect(aplicarAccion(documento, enPropuesta)).toEqual({
       ok: false,
       error: expect.any(String),
+    });
+  });
+});
+
+describe("validarAccion", () => {
+  it("rechaza como ancla de raíz un ID que solo existe como hijo", () => {
+    const documento = editorDesdeClase(claseEjemplo.bloques);
+    const propuesta = accion({
+      tipo: "raiz",
+      anclaId: documento[0].children[0].id,
+      posicion: "despues",
+    });
+
+    expect(validarAccion(documento, propuesta)).toEqual({
+      ok: false,
+      error: "No se encontró el ancla de raíz.",
+    });
+  });
+
+  it("permite revalidar al confirmar contra el documento más reciente", () => {
+    const documentoInicial = editorDesdeClase(claseEjemplo.bloques);
+    const propuesta = accion({
+      tipo: "fase",
+      faseId: documentoInicial[0].id,
+      posicion: "final",
+    });
+    expect(validarAccion(documentoInicial, propuesta)).toMatchObject({ ok: true });
+
+    const documentoReciente = structuredClone(documentoInicial);
+    documentoReciente.push({
+      id: ids.texto,
+      type: "texto",
+      props: { target: "material" },
+      content: [],
+      children: [],
+    });
+
+    expect(aplicarAccion(documentoReciente, propuesta)).toEqual({
+      ok: false,
+      error: "La propuesta repite un ID del documento.",
     });
   });
 });

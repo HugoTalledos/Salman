@@ -2,9 +2,11 @@ import { useState, type JSX } from "react";
 import type { AccionAsistente, BloqueInsertable } from "../asistente/acciones";
 
 type ResultadoAplicacion = { ok: true } | { ok: false; error: string };
+type ResultadoValidacion = { ok: true } | { ok: false; error: string };
 
 export function AccionesAsistente(props: {
   acciones: readonly AccionAsistente[];
+  validar: (accion: AccionAsistente) => ResultadoValidacion;
   describir: (accion: AccionAsistente) => string | null;
   aplicar: (accion: AccionAsistente) => ResultadoAplicacion;
 }): JSX.Element {
@@ -15,8 +17,15 @@ export function AccionesAsistente(props: {
   const accionSeleccionada = props.acciones.find(
     (accion) => accion.id === accionSeleccionadaId,
   );
-  const ubicacion = accionSeleccionada ? props.describir(accionSeleccionada) : null;
-  const ubicacionVencida = accionSeleccionada !== undefined && ubicacion === null;
+  const validacion = accionSeleccionada ? props.validar(accionSeleccionada) : null;
+  const ubicacion = accionSeleccionada && validacion?.ok
+    ? props.describir(accionSeleccionada)
+    : null;
+  const errorPreview = validacion && !validacion.ok
+    ? validacion.error
+    : accionSeleccionada !== undefined && ubicacion === null
+    ? "La ubicación de esta propuesta ya no existe."
+    : null;
 
   function verPropuesta(accion: AccionAsistente) {
     if (accionAplicadaId && accion.id !== accionAplicadaId) return;
@@ -30,7 +39,7 @@ export function AccionesAsistente(props: {
   }
 
   function confirmar() {
-    if (!accionSeleccionada || ubicacionVencida) return;
+    if (!accionSeleccionada || errorPreview) return;
 
     const resultado = props.aplicar(accionSeleccionada);
     if (!resultado.ok) {
@@ -76,14 +85,14 @@ export function AccionesAsistente(props: {
                 aria-label={`Vista previa: ${accion.titulo}`}
               >
                 <h4>Vista previa</h4>
-                {ubicacionVencida ? (
-                  <p role="alert">La ubicación de esta propuesta ya no existe.</p>
+                {errorPreview ? (
+                  <p role="alert">{errorPreview}</p>
                 ) : (
                   <p>{ubicacion}</p>
                 )}
                 <ul>
-                  {accion.bloques.map((bloque) => (
-                    <VistaBloque key={bloque.id} bloque={bloque} />
+                  {accion.bloques.map((bloque, indice) => (
+                    <VistaBloque key={`${bloque.id}-${indice}`} bloque={bloque} />
                   ))}
                 </ul>
                 {error && <p role="alert">{error}</p>}
@@ -91,7 +100,7 @@ export function AccionesAsistente(props: {
                   <button type="button" onClick={cancelar}>
                     Cancelar
                   </button>
-                  {!ubicacionVencida && accionAplicadaId !== accion.id && (
+                  {!errorPreview && accionAplicadaId !== accion.id && (
                     <button type="button" onClick={confirmar}>
                       Agregar al documento
                     </button>
@@ -115,7 +124,9 @@ function VistaBloque({ bloque }: { bloque: BloqueInsertable }): JSX.Element {
         {bloque.duracionMinutos && <p>{`${bloque.duracionMinutos} min`}</p>}
         {bloque.bloques.length > 0 && (
           <ul>
-            {bloque.bloques.map((hijo) => <VistaBloque key={hijo.id} bloque={hijo} />)}
+            {bloque.bloques.map((hijo, indice) => (
+              <VistaBloque key={`${hijo.id}-${indice}`} bloque={hijo} />
+            ))}
           </ul>
         )}
       </li>

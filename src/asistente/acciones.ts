@@ -60,7 +60,7 @@ export const AccionAsistenteSchema = z
     titulo: z.string(),
     beneficio: z.string(),
     ubicacion: UbicacionInsercionSchema,
-    bloques: z.array(BloqueInsertableSchema),
+    bloques: z.array(BloqueInsertableSchema).min(1),
   })
   .superRefine((accion, contexto) => {
     if (
@@ -76,12 +76,8 @@ export const AccionAsistenteSchema = z
   });
 export type AccionAsistente = z.infer<typeof AccionAsistenteSchema>;
 
-export const RespuestaAsistenteSchema = z.discriminatedUnion("tipo", [
-  z.object({
-    tipo: z.literal("informativa"),
-    mensaje: z.string(),
-  }),
-  z.object({
+const RespuestaAccionableSchema = z
+  .object({
     tipo: z.literal("accionable"),
     mensaje: z.string(),
     acciones: z.tuple([
@@ -89,7 +85,24 @@ export const RespuestaAsistenteSchema = z.discriminatedUnion("tipo", [
       AccionAsistenteSchema,
       AccionAsistenteSchema,
     ]),
+  })
+  .superRefine((respuesta, contexto) => {
+    const ids = respuesta.acciones.map((accion) => accion.id);
+    if (new Set(ids).size !== ids.length) {
+      contexto.addIssue({
+        code: "custom",
+        message: "Las acciones deben tener IDs únicos.",
+        path: ["acciones"],
+      });
+    }
+  });
+
+export const RespuestaAsistenteSchema = z.discriminatedUnion("tipo", [
+  z.object({
+    tipo: z.literal("informativa"),
+    mensaje: z.string(),
   }),
+  RespuestaAccionableSchema,
 ]);
 export type RespuestaAsistente = z.infer<typeof RespuestaAsistenteSchema>;
 

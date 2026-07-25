@@ -9,20 +9,20 @@ export type ResultadoAplicacion =
   | { ok: true; bloques: BloqueEditor[]; primerId: string }
   | { ok: false; error: string };
 
-export function aplicarAccion(
+export type ResultadoValidacion =
+  | { ok: true; accion: AccionAsistente }
+  | { ok: false; error: string };
+
+export function validarAccion(
   documento: BloqueEditor[],
-  accion: AccionAsistente,
-): ResultadoAplicacion {
+  accion: unknown,
+): ResultadoValidacion {
   const accionValidada = AccionAsistenteSchema.safeParse(accion);
   if (!accionValidada.success) {
     return { ok: false, error: accionValidada.error.issues[0].message };
   }
 
   const propuesta = accionValidada.data;
-  if (propuesta.bloques.length === 0) {
-    return { ok: false, error: "La acción debe incluir al menos un bloque." };
-  }
-
   const idsVivos = new Set(recolectarIds(documento));
   const idsPropuestos = recolectarIds(propuesta.bloques);
   if (idsPropuestos.some((id) => idsVivos.has(id))) {
@@ -32,16 +32,36 @@ export function aplicarAccion(
     return { ok: false, error: "La propuesta contiene IDs duplicados." };
   }
 
+  const ubicacion = propuesta.ubicacion;
+  if (ubicacion.tipo === "raiz") {
+    const existe = documento.some((bloque) => bloque.id === ubicacion.anclaId);
+    return existe
+      ? { ok: true, accion: propuesta }
+      : { ok: false, error: "No se encontró el ancla de raíz." };
+  }
+
+  const existe = documento.some(
+    (bloque) => bloque.id === ubicacion.faseId && bloque.type === "fase",
+  );
+  return existe
+    ? { ok: true, accion: propuesta }
+    : { ok: false, error: "No se encontró la fase de destino." };
+}
+
+export function aplicarAccion(
+  documento: BloqueEditor[],
+  accion: AccionAsistente,
+): ResultadoAplicacion {
+  const validacion = validarAccion(documento, accion);
+  if (!validacion.ok) return validacion;
+
+  const propuesta = validacion.accion;
   const nuevosBloques = editorDesdeClase(propuesta.bloques);
   const ubicacion = propuesta.ubicacion;
   if (ubicacion.tipo === "raiz") {
     const indice = documento.findIndex(
       (bloque) => bloque.id === ubicacion.anclaId,
     );
-    if (indice === -1) {
-      return { ok: false, error: "No se encontró el ancla de raíz." };
-    }
-
     const bloques = [...documento];
     bloques.splice(
       ubicacion.posicion === "antes" ? indice : indice + 1,
@@ -54,10 +74,6 @@ export function aplicarAccion(
   const indiceFase = documento.findIndex(
     (bloque) => bloque.id === ubicacion.faseId && bloque.type === "fase",
   );
-  if (indiceFase === -1) {
-    return { ok: false, error: "No se encontró la fase de destino." };
-  }
-
   const fase = documento[indiceFase];
   const hijos = ubicacion.posicion === "inicio"
     ? [...nuevosBloques, ...fase.children]
@@ -71,10 +87,10 @@ export function describirUbicacion(
   documento: BloqueEditor[],
   accion: AccionAsistente,
 ): string | null {
-  const accionValidada = AccionAsistenteSchema.safeParse(accion);
-  if (!accionValidada.success) return null;
+  const validacion = validarAccion(documento, accion);
+  if (!validacion.ok) return null;
 
-  const ubicacion = accionValidada.data.ubicacion;
+  const ubicacion = validacion.accion.ubicacion;
   if (ubicacion.tipo === "fase") {
     const fase = documento.find(
       (bloque) => bloque.id === ubicacion.faseId && bloque.type === "fase",
