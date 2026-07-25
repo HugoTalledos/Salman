@@ -14,6 +14,7 @@ function crearRepositorio(
     },
     crear: async () => "",
     guardar: async () => undefined,
+    borrar: async () => undefined,
     escribirRecurso: async () => undefined,
     escribirRecursoUnico: async (_carpeta, nombre) => nombre,
     listarRecursos: async () => [],
