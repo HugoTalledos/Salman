@@ -42,7 +42,27 @@ describe("SubirRecursoImpl", () => {
     });
 
     expect(nombreEscrito).toBe("Mapa del ciclo.png");
-    expect(resultado).toEqual({ recurso: "Mapa del ciclo.png" });
+    expect(resultado).toEqual({ recurso: "recursos/Mapa del ciclo.png" });
+  });
+
+  it("reproduce el saneamiento de nombreCarpeta sin recortar tras quitar puntos", async () => {
+    let nombreEscrito = "";
+    const repositorio = crearRepositorio({
+      escribirRecursoUnico: async (_carpeta, nombre) => {
+        nombreEscrito = nombre;
+        return nombre;
+      },
+    });
+    const subir = new SubirRecursoImpl(repositorio);
+
+    await subir.ejecutar({
+      carpeta: "Fracciones",
+      nombre: "... mapa.png",
+      tipo: "image/png",
+      datos: new Uint8Array(),
+    });
+
+    expect(nombreEscrito).toBe(" mapa.png");
   });
 
   it.each(["png", "jpg", "jpeg", "gif", "webp", "svg"])(
@@ -57,7 +77,7 @@ describe("SubirRecursoImpl", () => {
           tipo: "application/octet-stream",
           datos: new Uint8Array(),
         }),
-      ).resolves.toEqual({ recurso: `recurso.${extension}` });
+      ).resolves.toEqual({ recurso: `recursos/recurso.${extension}` });
     },
   );
 
@@ -87,7 +107,7 @@ describe("SubirRecursoImpl", () => {
         ...entrada,
         datos: new Uint8Array(10 * 1024 * 1024),
       }),
-    ).resolves.toEqual({ recurso: "imagen.png" });
+    ).resolves.toEqual({ recurso: "recursos/imagen.png" });
     await expect(
       subir.ejecutar({
         ...entrada,
@@ -121,7 +141,7 @@ describe("SubirRecursoImpl", () => {
       nombre: "mapa.png",
       datos,
     });
-    expect(resultado).toEqual({ recurso: "mapa-2.png" });
+    expect(resultado).toEqual({ recurso: "recursos/mapa-2.png" });
   });
 });
 

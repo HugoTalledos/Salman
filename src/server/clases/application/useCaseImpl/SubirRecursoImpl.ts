@@ -19,8 +19,7 @@ function sanearTallo(tallo: string): string {
     .join(" ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^\.+/, "")
-    .trim();
+    .replace(/^\.+/, "");
 
   return saneado || "Clase sin título";
 }
@@ -56,6 +55,6 @@ export class SubirRecursoImpl implements SubirRecurso {
       entrada.datos,
     );
 
-    return { recurso };
+    return { recurso: `recursos/${recurso}` };
   }
 }
