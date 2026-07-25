@@ -12,6 +12,13 @@ export class ProyectoNoExiste extends Error {
   }
 }
 
+export class ScaffoldNoExiste extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = "ScaffoldNoExiste";
+  }
+}
+
 export class RecursoNoExiste extends Error {
   constructor(mensaje: string) {
     super(mensaje);
