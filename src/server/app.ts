@@ -13,28 +13,21 @@ import { crearRutasClases } from "./clases/infrastructure/http/RutasClases";
 import { crearRutasRecursos } from "./clases/infrastructure/http/RutasRecursos";
 import { ProyectoFileSystemRepository } from "./clases/infrastructure/persistence/ProyectoFileSystemRepository";
 import { catalogoScaffolds } from "./clases/infrastructure/scaffold/CatalogoScaffolds";
-import { obtenerProveedorLLM, type ProveedorLLM } from "./llm";
-import { obtenerRespuestaAsistente } from "./respuesta-asistente";
-import { ErrorStore, leerProyecto } from "./store";
+import { ResponderConsultaImpl } from "./asistencia/application/useCaseImpl/ResponderConsultaImpl";
+import {
+  crearRutasAsistencia,
+  MENSAJE_ASISTENTE_NO_CONFIGURADO,
+} from "./asistencia/infrastructure/http/RutasAsistencia";
+import { serializadorPrompt } from "./asistencia/infrastructure/llm/SerializarPrompt";
+import type { ResponderConsulta } from "./asistencia/application/useCase/ResponderConsulta";
+import type { ProveedorLLM } from "./shared/llm/application/port/ProveedorLLM";
+import { configurarProveedorLLM } from "./shared/llm/infrastructure/ConfigurarProveedor";
+import { ErrorStore } from "./store";
 
 /**
  * API local de proyectos. La UI nunca toca el filesystem: todo pasa por aquí.
  * `base` se inyecta para que las pruebas usen un directorio temporal.
  */
-
-const CuerpoAsistente = z.object({
-  mensajes: z
-    .array(
-      z.object({
-        rol: z.enum(["usuario", "asistente"]),
-        contenido: z.string().min(1),
-        /** IDs de bloques del fuente que el profesor señala en este mensaje. */
-        bloques: z.array(z.uuid()).max(10).optional(),
-      }),
-    )
-    .min(1)
-    .max(60),
-});
 
 export interface OpcionesApp {
   /**
@@ -60,16 +53,22 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
   // El proveedor se resuelve perezosamente para que el servidor arranque
   // sin credenciales: el error se informa al usar el asistente, no antes.
   let llm = opciones.llm;
+  let responderConsulta: ResponderConsulta | null | undefined;
   let errorLLM: string | null = null;
-  const obtenerLLM = (): ProveedorLLM | null => {
-    if (llm !== undefined) return llm;
-    try {
-      llm = obtenerProveedorLLM();
-    } catch (err) {
-      llm = null;
-      errorLLM = (err as Error).message;
+  const obtenerResponderConsulta = (): ResponderConsulta | null => {
+    if (responderConsulta !== undefined) return responderConsulta;
+    if (llm === undefined) {
+      try {
+        llm = configurarProveedorLLM();
+      } catch (error) {
+        llm = null;
+        errorLLM = (error as Error).message;
+      }
     }
-    return llm;
+    responderConsulta = llm
+      ? new ResponderConsultaImpl(repositorio, llm, serializadorPrompt)
+      : null;
+    return responderConsulta;
   };
 
   app.onError((err, c) => {
@@ -105,43 +104,14 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
       obtenerRecurso,
     }),
   );
-
-  /** Conversación con el Asistente Salman sobre el fuente EN DISCO. */
-  app.post("/api/proyectos/:carpeta/asistente", async (c) => {
-    const proveedor = obtenerLLM();
-    if (!proveedor) {
-      return c.json(
-        {
-          error:
-            errorLLM ??
-            "El asistente no está configurado. Define ANTHROPIC_API_KEY (o SALMAN_LLM=openai con su configuración) y reinicia el servidor.",
-        },
-        503,
-      );
-    }
-    const { mensajes } = CuerpoAsistente.parse(await c.req.json());
-    const clase = await leerProyecto(base, c.req.param("carpeta"));
-    // Los bloques señalados se anotan dentro del turno correspondiente para
-    // que la referencia sobreviva en el historial de mensajes siguientes.
-    const mensajesLLM = mensajes.map(({ rol, contenido, bloques }) =>
-      rol === "usuario" && bloques?.length
-        ? {
-            rol,
-            contenido: `[El profesor señala los bloques con id: ${bloques.join(", ")}]\n${contenido}`,
-          }
-        : { rol, contenido },
-    );
-    try {
-      const respuesta = await obtenerRespuestaAsistente(proveedor, clase, mensajesLLM);
-      return c.json(respuesta);
-    } catch (err) {
-      console.error("Error del proveedor LLM:", err);
-      return c.json(
-        { error: `El asistente no pudo responder: ${(err as Error).message}` },
-        502,
-      );
-    }
-  });
+  app.route(
+    "/",
+    crearRutasAsistencia({
+      obtenerResponderConsulta,
+      obtenerErrorConfiguracion: () =>
+        errorLLM ?? MENSAJE_ASISTENTE_NO_CONFIGURADO,
+    }),
+  );
 
   return app;
 }

@@ -59,7 +59,9 @@ describe("Asistente Salman", () => {
         },
       },
     });
+    expect(sistemas).toEqual([]);
     const carpeta = await crearProyecto(base, claseEjemplo);
+    expect(sistemas).toEqual([]);
     const res = await preguntar(conFake, carpeta);
     expect(res.status).toBe(200);
     expect(await json<object>(res)).toEqual({
