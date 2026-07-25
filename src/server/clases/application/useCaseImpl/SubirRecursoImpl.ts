@@ -40,11 +40,11 @@ export class SubirRecursoImpl implements SubirRecurso {
         ? entrada.nombre.slice(indiceExtension).toLowerCase()
         : "";
 
-    if (!EXTENSIONES_PERMITIDAS.has(extension)) {
-      throw new RecursoInvalido("La extensión del recurso no está permitida");
-    }
     if (entrada.datos.byteLength > TAMANO_MAXIMO) {
       throw new RecursoInvalido("El recurso excede el tamaño máximo de 10 MiB");
+    }
+    if (!EXTENSIONES_PERMITIDAS.has(extension)) {
+      throw new RecursoInvalido("La extensión del recurso no está permitida");
     }
 
     const tallo = entrada.nombre.slice(0, indiceExtension);

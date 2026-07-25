@@ -293,6 +293,23 @@ describe("API de proyectos", () => {
     });
   });
 
+  it("POST recursos prioriza el tamaño sobre una extensión inválida", async () => {
+    const carpeta = await repositorio.crear(claseEjemplo);
+    const ruta = `/api/proyectos/${encodeURIComponent(carpeta)}/recursos`;
+    const forma = new FormData();
+    forma.append(
+      "archivo",
+      new File([new Uint8Array(10 * 1024 * 1024 + 1)], "script.sh"),
+    );
+
+    const res = await app.request(ruta, { method: "POST", body: forma });
+
+    expect(res.status).toBe(400);
+    expect(await json<object>(res)).toEqual({
+      error: "La imagen supera los 10 MB",
+    });
+  });
+
   it("PUT con identificador con path traversal responde 400", async () => {
     const res = await app.request("/api/proyectos/..%2Ffuera", {
       method: "PUT",
