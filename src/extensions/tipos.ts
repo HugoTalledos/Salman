@@ -1,4 +1,7 @@
-import type { Bloque, ClaseSalman } from "../schema/clase";
+import type {
+  Bloque,
+  ClaseSalman,
+} from "../server/clases/domain/entity/Clase";
 
 /**
  * Punto de extensión de Salman: agentes y skills.

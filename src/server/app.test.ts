@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Hono } from "hono";
 import { claseEjemplo } from "../testing/fixtures";
 import { crearApp } from "./app";
-import { crearProyecto } from "./store";
+import { ProyectoFileSystemRepository } from "./clases/infrastructure/persistence/ProyectoFileSystemRepository";
 
 let base: string;
 
@@ -23,7 +23,9 @@ afterEach(async () => {
 describe("Composición de clases", () => {
   it("registra los routers de proyectos y recursos sobre la misma base", async () => {
     const app = crearApp(base, { llm: null });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const proyecto = await app.request(
       `/api/proyectos/${encodeURIComponent(carpeta)}`,
     );
@@ -60,7 +62,9 @@ describe("Asistente Salman", () => {
       },
     });
     expect(sistemas).toEqual([]);
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     expect(sistemas).toEqual([]);
     const res = await preguntar(conFake, carpeta);
     expect(res.status).toBe(200);
@@ -141,7 +145,9 @@ describe("Asistente Salman", () => {
         },
       },
     });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const res = await preguntar(conFake, carpeta);
     expect(res.status).toBe(200);
     expect((await json<{ acciones: unknown[] }>(res)).acciones).toHaveLength(3);
@@ -158,7 +164,9 @@ describe("Asistente Salman", () => {
         },
       },
     });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const idNota = "1a2b3c4d-0000-4000-8000-000000000002";
     const res = await conFake.request(
       `/api/proyectos/${encodeURIComponent(carpeta)}/asistente`,
@@ -180,7 +188,9 @@ describe("Asistente Salman", () => {
 
   it("sin proveedor configurado responde 503 con instrucciones", async () => {
     const sinLLM = crearApp(base, { llm: null });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const res = await preguntar(sinLLM, carpeta);
     expect(res.status).toBe(503);
     expect((await json<{ error: string }>(res)).error).toBeTruthy();
@@ -208,7 +218,9 @@ describe("Asistente Salman", () => {
         },
       },
     });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const res = await preguntar(roto, carpeta);
     expect(res.status).toBe(502);
     expect((await json<{ error: string }>(res)).error).toContain("sin cuota");
@@ -218,7 +230,9 @@ describe("Asistente Salman", () => {
     const invalido = crearApp(base, {
       llm: { id: "fake", completar: async () => "no es JSON" },
     });
-    const carpeta = await crearProyecto(base, claseEjemplo);
+    const carpeta = await new ProyectoFileSystemRepository(base).crear(
+      claseEjemplo,
+    );
     const res = await preguntar(invalido, carpeta);
     expect(res.status).toBe(502);
     expect((await json<{ error: string }>(res)).error).toContain(

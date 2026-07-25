@@ -1,4 +1,4 @@
-import type { ClaseSalman } from "../schema/clase";
+import type { ClaseSalman } from "../server/clases/domain/entity/Clase";
 
 /** Clase de ejemplo válida y completa, compartida por las pruebas. */
 export const claseEjemplo: ClaseSalman = {

@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AccionAsistente } from "../asistente/acciones";
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 import { AccionesAsistente } from "./AccionesAsistente";
 
 afterEach(cleanup);

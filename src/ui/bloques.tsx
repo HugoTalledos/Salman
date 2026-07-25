@@ -6,7 +6,7 @@ import {
 } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { createContext, useContext, useState } from "react";
-import type { Target } from "../schema/clase";
+import type { Target } from "../server/clases/domain/entity/Clase";
 import { api } from "./api";
 
 /**

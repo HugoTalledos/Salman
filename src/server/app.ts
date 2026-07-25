@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { z } from "zod";
 import { CompilarProyectoImpl } from "./clases/application/useCaseImpl/CompilarProyectoImpl";
 import { CrearProyectoImpl } from "./clases/application/useCaseImpl/CrearProyectoImpl";
 import { GuardarProyectoImpl } from "./clases/application/useCaseImpl/GuardarProyectoImpl";
@@ -9,7 +8,10 @@ import { ObtenerProyectoImpl } from "./clases/application/useCaseImpl/ObtenerPro
 import { ObtenerRecursoImpl } from "./clases/application/useCaseImpl/ObtenerRecursoImpl";
 import { SubirRecursoImpl } from "./clases/application/useCaseImpl/SubirRecursoImpl";
 import { CompiladorHtml } from "./clases/infrastructure/compiler/CompiladorHtml";
-import { crearRutasClases } from "./clases/infrastructure/http/RutasClases";
+import {
+  crearRutasClases,
+  responderErrorHttp,
+} from "./clases/infrastructure/http/RutasClases";
 import { crearRutasRecursos } from "./clases/infrastructure/http/RutasRecursos";
 import { ProyectoFileSystemRepository } from "./clases/infrastructure/persistence/ProyectoFileSystemRepository";
 import { catalogoScaffolds } from "./clases/infrastructure/scaffold/CatalogoScaffolds";
@@ -22,7 +24,6 @@ import { serializadorPrompt } from "./asistencia/infrastructure/llm/SerializarPr
 import type { ResponderConsulta } from "./asistencia/application/useCase/ResponderConsulta";
 import type { ProveedorLLM } from "./shared/llm/application/port/ProveedorLLM";
 import { configurarProveedorLLM } from "./shared/llm/infrastructure/ConfigurarProveedor";
-import { ErrorStore } from "./store";
 
 /**
  * API local de proyectos. La UI nunca toca el filesystem: todo pasa por aquí.
@@ -71,19 +72,7 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
     return responderConsulta;
   };
 
-  app.onError((err, c) => {
-    if (err instanceof ErrorStore) {
-      return c.json(
-        { error: err.message },
-        err.codigo === "no-existe" ? 404 : 400,
-      );
-    }
-    if (err instanceof z.ZodError) {
-      return c.json({ error: "Documento inválido", detalles: err.issues }, 400);
-    }
-    console.error(err);
-    return c.json({ error: "Error interno" }, 500);
-  });
+  app.onError(responderErrorHttp);
 
   app.route(
     "/",

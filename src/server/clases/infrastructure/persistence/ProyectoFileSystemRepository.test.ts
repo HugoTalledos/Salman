@@ -3,7 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { claseEjemplo } from "../../../../testing/fixtures";
-import { ProyectoFileSystemRepository } from "./ProyectoFileSystemRepository";
+import {
+  nombreCarpeta,
+  ProyectoFileSystemRepository,
+} from "./ProyectoFileSystemRepository";
 
 let base: string;
 let repositorio: ProyectoFileSystemRepository;
@@ -67,5 +70,18 @@ describe("ProyectoFileSystemRepository", () => {
     for (const malicioso of ["../fuera", "a/b", "..", ".oculta"]) {
       await expect(repositorio.obtener(malicioso)).rejects.toThrow(/inválido/);
     }
+  });
+});
+
+describe("nombreCarpeta", () => {
+  it("limpia separadores de ruta y espacios", () => {
+    expect(nombreCarpeta("  Fracciones: parte/todo \\ repaso  ")).toBe(
+      "Fracciones parte todo repaso",
+    );
+  });
+
+  it("no produce nombres vacíos ni ocultos", () => {
+    expect(nombreCarpeta("///")).toBe("Clase sin título");
+    expect(nombreCarpeta("...sigilosa")).toBe("sigilosa");
   });
 });

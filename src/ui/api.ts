@@ -1,5 +1,5 @@
-import type { ClaseSalman } from "../schema/clase";
-import type { RespuestaAsistente } from "../asistente/acciones";
+import type { RespuestaAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
+import type { ClaseSalman } from "../server/clases/domain/entity/Clase";
 
 /** Cliente de la API local. La UI nunca toca el filesystem: todo pasa por aquí. */
 

@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { RespuestaAsistente } from "../asistente/acciones";
+import type { RespuestaAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 import type { BloqueEditor } from "../mapping/mapeo";
 import { Asistente } from "./Asistente";
 import { api } from "./api";

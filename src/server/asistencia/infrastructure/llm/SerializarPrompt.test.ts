@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { claseEjemplo } from "../../../../testing/fixtures";
+import { parsearRespuestaAsistente } from "../../domain/entity/RespuestaAsistente";
 import { POLITICA_ASISTENTE } from "../../domain/policy/PoliticaAsistente";
 import { serializadorPrompt } from "./SerializarPrompt";
 
@@ -28,6 +29,27 @@ describe("serializadorPrompt", () => {
     expect(prompt).toContain(
       `\`\`\`json\n${JSON.stringify(claseEjemplo, null, 2)}\n\`\`\``,
     );
+    const ejemplo = prompt.match(
+      /Una respuesta accionable[\s\S]*?Ejemplo válido: (\{.*\})\.\n\nEste es el fuente/,
+    );
+    expect(parsearRespuestaAsistente(ejemplo?.[1] ?? "")).toMatchObject({
+      tipo: "accionable",
+      acciones: [
+        {
+          bloques: [
+            { contenido: "Escribe una pregunta inicial sobre el tema." },
+          ],
+        },
+        {
+          bloques: [
+            { contenido: "Observa qué ideas previas aparecen." },
+          ],
+        },
+        {
+          bloques: [{ contenido: "Anota una idea que aprendiste hoy." }],
+        },
+      ],
+    });
   });
 
   it("conserva el criterio y la restricción de ejemplo para una clase en blanco", () => {

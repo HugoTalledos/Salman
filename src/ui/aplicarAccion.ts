@@ -1,7 +1,7 @@
 import {
   AccionAsistenteSchema,
   type AccionAsistente,
-} from "../asistente/acciones";
+} from "../server/asistencia/domain/entity/RespuestaAsistente";
 import { textoPlano } from "../mapping/inline";
 import { editorDesdeClase, type BloqueEditor } from "../mapping/mapeo";
 

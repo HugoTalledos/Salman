@@ -1,5 +1,8 @@
 import { useState, type JSX } from "react";
-import type { AccionAsistente, BloqueInsertable } from "../asistente/acciones";
+import type {
+  AccionAsistente,
+  BloqueInsertable,
+} from "../server/asistencia/domain/entity/RespuestaAsistente";
 
 type ResultadoAplicacion = { ok: true } | { ok: false; error: string };
 type ResultadoValidacion = { ok: true } | { ok: false; error: string };

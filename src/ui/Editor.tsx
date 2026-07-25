@@ -3,9 +3,12 @@ import "@blocknote/mantine/style.css";
 import { SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AccionAsistente } from "../asistente/acciones";
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 import { type BloqueEditor, claseDesdeEditor, editorDesdeClase } from "../mapping/mapeo";
-import type { ClaseSalman, Target } from "../schema/clase";
+import type {
+  ClaseSalman,
+  Target,
+} from "../server/clases/domain/entity/Clase";
 import { api } from "./api";
 import { ArchivosProyecto } from "./ArchivosProyecto";
 import { Asistente } from "./Asistente";

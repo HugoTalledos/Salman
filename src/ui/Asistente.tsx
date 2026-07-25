@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AccionAsistente } from "../asistente/acciones";
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 import type { BloqueEditor } from "../mapping/mapeo";
 import { AccionesAsistente } from "./AccionesAsistente";
 import { describirUbicacion, validarAccion } from "./aplicarAccion";

@@ -1,5 +1,10 @@
-import type { Bloque, BloqueFase, BloqueHijo, Target } from "../schema/clase";
-import { Target as TargetSchema } from "../schema/clase";
+import type {
+  Bloque,
+  BloqueFase,
+  BloqueHijo,
+  Target,
+} from "../server/clases/domain/entity/Clase";
+import { Target as TargetSchema } from "../server/clases/domain/entity/Clase";
 import {
   type ContenidoInline,
   inlineDesdeMd,

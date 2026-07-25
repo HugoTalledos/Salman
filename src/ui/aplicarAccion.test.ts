@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AccionAsistente } from "../asistente/acciones";
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 import { editorDesdeClase } from "../mapping/mapeo";
 import { claseEjemplo } from "../testing/fixtures";
 import {

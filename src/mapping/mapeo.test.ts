@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { crearClase, obtenerScaffold } from "../scaffolds";
-import type { Bloque } from "../schema/clase";
+import type { Bloque } from "../server/clases/domain/entity/Clase";
+import { crearClase } from "../server/clases/domain/service/CrearClase";
+import { catalogoScaffolds } from "../server/clases/infrastructure/scaffold/CatalogoScaffolds";
 import { claseEjemplo } from "../testing/fixtures";
 import { type BloqueEditor, claseDesdeEditor, editorDesdeClase } from "./mapeo";
 
@@ -44,8 +45,10 @@ describe("viaje completo fuente → editor → fuente", () => {
   });
 
   it("preserva la semilla del scaffold real (markdown con formato y listas)", () => {
-    const semilla = crearClase("Prueba", obtenerScaffold("inicio-desarrollo-cierre")!)
-      .bloques;
+    const semilla = crearClase(
+      "Prueba",
+      catalogoScaffolds.obtener("inicio-desarrollo-cierre")!,
+    ).bloques;
     expect(claseDesdeEditor(editorDesdeClase(semilla))).toEqual(semilla);
   });
 });
