@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { claseEjemplo } from "../../../../testing/fixtures";
 import { CompilarProyectoImpl } from "../../application/useCaseImpl/CompilarProyectoImpl";
+import { BorrarProyectoImpl } from "../../application/useCaseImpl/BorrarProyectoImpl";
 import { CrearProyectoImpl } from "../../application/useCaseImpl/CrearProyectoImpl";
 import { GuardarProyectoImpl } from "../../application/useCaseImpl/GuardarProyectoImpl";
 import { ListarProyectosImpl } from "../../application/useCaseImpl/ListarProyectosImpl";
@@ -28,6 +29,7 @@ type RespuestaClase = { carpeta: string; clase: typeof claseEjemplo };
 
 function dependenciasClases(repositorio: ProyectoFileSystemRepository) {
   return {
+    borrarProyecto: new BorrarProyectoImpl(repositorio),
     crearProyecto: new CrearProyectoImpl(repositorio, catalogoScaffolds),
     listarProyectos: new ListarProyectosImpl(repositorio),
     obtenerProyecto: new ObtenerProyectoImpl(repositorio),
@@ -68,6 +70,25 @@ afterEach(async () => {
 });
 
 describe("API de proyectos", () => {
+  it("DELETE borra la clase y deja de listarla", async () => {
+    const carpeta = await repositorio.crear(claseEjemplo);
+
+    const res = await app.request(`/api/proyectos/${encodeURIComponent(carpeta)}`, {
+      method: "DELETE",
+    });
+
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+    expect((await repositorio.listar())).toEqual([]);
+  });
+
+  it("DELETE de una clase inexistente responde 404", async () => {
+    const res = await app.request("/api/proyectos/fantasma", { method: "DELETE" });
+
+    expect(res.status).toBe(404);
+    expect((await json<{ error: string }>(res)).error).toContain("No existe");
+  });
+
   it("GET /api/proyectos lista los proyectos", async () => {
     await repositorio.crear(claseEjemplo);
     const res = await app.request("/api/proyectos");

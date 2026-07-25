@@ -1,5 +1,6 @@
 import { Hono, type ErrorHandler } from "hono";
 import { z } from "zod";
+import type { BorrarProyecto } from "../../application/useCase/BorrarProyecto";
 import type { CompilarProyecto } from "../../application/useCase/CompilarProyecto";
 import type { CrearProyecto } from "../../application/useCase/CrearProyecto";
 import type { GuardarProyecto } from "../../application/useCase/GuardarProyecto";
@@ -29,6 +30,7 @@ export interface ResumenScaffold {
 }
 
 export interface DependenciasRutasClases {
+  borrarProyecto: BorrarProyecto;
   crearProyecto: CrearProyecto;
   listarProyectos: ListarProyectos;
   obtenerProyecto: ObtenerProyecto;
@@ -121,6 +123,11 @@ export function crearRutasClases(
       contexto.req.param("carpeta"),
     );
     return contexto.json({ clase });
+  });
+
+  rutas.delete("/api/proyectos/:carpeta", async (contexto) => {
+    await dependencias.borrarProyecto.ejecutar(contexto.req.param("carpeta"));
+    return contexto.body(null, 204);
   });
 
   rutas.post("/api/proyectos/:carpeta/compilar", async (contexto) => {

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { CompilarProyectoImpl } from "./clases/application/useCaseImpl/CompilarProyectoImpl";
+import { BorrarProyectoImpl } from "./clases/application/useCaseImpl/BorrarProyectoImpl";
 import { CrearProyectoImpl } from "./clases/application/useCaseImpl/CrearProyectoImpl";
 import { GuardarProyectoImpl } from "./clases/application/useCaseImpl/GuardarProyectoImpl";
 import { ListarProyectosImpl } from "./clases/application/useCaseImpl/ListarProyectosImpl";
@@ -42,6 +43,7 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
   const app = new Hono();
   const repositorio = new ProyectoFileSystemRepository(base);
   const compilador = new CompiladorHtml();
+  const borrarProyecto = new BorrarProyectoImpl(repositorio);
   const crearProyecto = new CrearProyectoImpl(repositorio, catalogoScaffolds);
   const listarProyectos = new ListarProyectosImpl(repositorio);
   const obtenerProyecto = new ObtenerProyectoImpl(repositorio);
@@ -77,6 +79,7 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
   app.route(
     "/",
     crearRutasClases({
+      borrarProyecto,
       crearProyecto,
       listarProyectos,
       obtenerProyecto,
