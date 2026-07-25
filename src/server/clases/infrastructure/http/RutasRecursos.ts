@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { ListarRecursos } from "../../application/useCase/ListarRecursos";
 import type { ObtenerRecurso } from "../../application/useCase/ObtenerRecurso";
 import type { SubirRecurso } from "../../application/useCase/SubirRecurso";
+import { validarMetadatosRecurso } from "../../domain/service/ValidarMetadatosRecurso";
 import { responderErrorHttp } from "./RutasClases";
 
 export interface DependenciasRutasRecursos {
@@ -22,6 +23,10 @@ export function crearRutasRecursos(
       return contexto.json({ error: "Falta el campo «archivo»" }, 400);
     }
 
+    validarMetadatosRecurso({
+      nombre: archivo.name,
+      byteLength: archivo.size,
+    });
     const resultado = await dependencias.subirRecurso.ejecutar({
       carpeta: contexto.req.param("carpeta"),
       nombre: archivo.name,

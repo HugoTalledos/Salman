@@ -5,6 +5,10 @@ import type {
   ResponderConsulta,
 } from "../../application/useCase/ResponderConsulta";
 import { RespuestaLLMInvalida } from "../../domain/error/ErroresAsistencia";
+import {
+  NombreProyectoInvalido,
+  ProyectoNoExiste,
+} from "../../../clases/domain/error/ErroresProyecto";
 import { crearRutasAsistencia } from "./RutasAsistencia";
 
 const json = <T>(respuesta: Response) => respuesta.json() as Promise<T>;
@@ -189,6 +193,38 @@ describe("crearRutasAsistencia", () => {
     expect(respuesta.status).toBe(400);
     expect(await json<{ error: string }>(respuesta)).toMatchObject({
       error: "Documento inválido",
+    });
+  });
+
+  it("responde con el cuerpo 404 exacto cuando el proyecto no existe", async () => {
+    const responder = new ResponderFake(async () => {
+      throw new ProyectoNoExiste("No existe el proyecto Fantasma");
+    });
+    const { rutas } = crearRutas(responder);
+
+    const respuesta = await rutas.request(
+      crearPeticion([{ rol: "usuario", contenido: "hola" }], "Fantasma"),
+    );
+
+    expect(respuesta.status).toBe(404);
+    expect(await json<object>(respuesta)).toEqual({
+      error: "No existe el proyecto Fantasma",
+    });
+  });
+
+  it("responde con el cuerpo 400 exacto ante un nombre de proyecto inválido", async () => {
+    const responder = new ResponderFake(async () => {
+      throw new NombreProyectoInvalido("Nombre inválido: ../fuera");
+    });
+    const { rutas } = crearRutas(responder);
+
+    const respuesta = await rutas.request(
+      crearPeticion([{ rol: "usuario", contenido: "hola" }], "../fuera"),
+    );
+
+    expect(respuesta.status).toBe(400);
+    expect(await json<object>(respuesta)).toEqual({
+      error: "Nombre inválido: ../fuera",
     });
   });
 

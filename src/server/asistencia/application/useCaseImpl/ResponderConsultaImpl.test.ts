@@ -66,15 +66,17 @@ class RepositorioFake implements ProyectoRepository {
 class ProveedorFake implements ProveedorLLM {
   readonly id = "fake";
   readonly peticiones: PeticionLLM[] = [];
-  private readonly respuestas: string[];
+  private readonly respuestas: (Error | string)[];
 
-  constructor(respuestas: string[]) {
+  constructor(respuestas: (Error | string)[]) {
     this.respuestas = respuestas;
   }
 
   async completar(peticion: PeticionLLM): Promise<string> {
     this.peticiones.push(peticion);
-    return this.respuestas.shift() ?? "";
+    const respuesta = this.respuestas.shift() ?? "";
+    if (respuesta instanceof Error) throw respuesta;
+    return respuesta;
   }
 }
 
@@ -89,7 +91,7 @@ class SerializadorFake implements SerializadorPrompt {
   }
 }
 
-function preparar(respuestas: string[]) {
+function preparar(respuestas: (Error | string)[]) {
   const repositorio = new RepositorioFake(claseEjemplo);
   const proveedor = new ProveedorFake(respuestas);
   const serializador = new SerializadorFake();
@@ -172,6 +174,21 @@ describe("ResponderConsultaImpl", () => {
       ),
     );
     expect(proveedor.peticiones).toHaveLength(2);
+  });
+
+  it("tipifica exclusivamente un fallo del proveedor", async () => {
+    const { casoDeUso, proveedor } = preparar([new Error("sin cuota")]);
+
+    await expect(
+      casoDeUso.ejecutar({
+        carpeta: "clase",
+        mensajes: [{ rol: "usuario", contenido: "¿Está completa?" }],
+      }),
+    ).rejects.toMatchObject({
+      name: "ProveedorLLMNoDisponible",
+      message: "sin cuota",
+    });
+    expect(proveedor.peticiones).toHaveLength(1);
   });
 
   it("anota los bloques seleccionados en su turno y conserva la anotación al reparar", async () => {

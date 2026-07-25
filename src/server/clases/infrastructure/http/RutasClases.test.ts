@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Hono } from "hono";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { claseEjemplo } from "../../../../testing/fixtures";
 import { CompilarProyectoImpl } from "../../application/useCaseImpl/CompilarProyectoImpl";
 import { CrearProyectoImpl } from "../../application/useCaseImpl/CrearProyectoImpl";
@@ -63,6 +63,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await fs.rm(base, { recursive: true, force: true });
 });
 
@@ -309,6 +310,41 @@ describe("API de proyectos", () => {
       error: "La imagen supera los 10 MB",
     });
   });
+
+  it.each([
+    [
+      "un archivo mayor de 10 MiB",
+      new File([new Uint8Array(10 * 1024 * 1024 + 1)], "grande.png"),
+      "La imagen supera los 10 MB",
+    ],
+    [
+      "un nombre sin tallo",
+      new File([], ".png"),
+      "Solo se aceptan imágenes (.png, .jpg, .jpeg, .gif, .webp, .svg)",
+    ],
+    [
+      "una extensión no permitida",
+      new File([], "script.sh"),
+      "Solo se aceptan imágenes (.png, .jpg, .jpeg, .gif, .webp, .svg)",
+    ],
+  ])(
+    "POST recursos no materializa %s",
+    async (_caso, archivo, mensaje) => {
+      const carpeta = await repositorio.crear(claseEjemplo);
+      const ruta = `/api/proyectos/${encodeURIComponent(carpeta)}/recursos`;
+      const arrayBuffer = vi
+        .spyOn(File.prototype, "arrayBuffer")
+        .mockRejectedValue(new Error("arrayBuffer no debe ejecutarse"));
+      const forma = new FormData();
+      forma.append("archivo", archivo);
+
+      const res = await app.request(ruta, { method: "POST", body: forma });
+
+      expect(res.status).toBe(400);
+      expect(await json<object>(res)).toEqual({ error: mensaje });
+      expect(arrayBuffer).not.toHaveBeenCalled();
+    },
+  );
 
   it("PUT con identificador con path traversal responde 400", async () => {
     const res = await app.request("/api/proyectos/..%2Ffuera", {

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import type { ProyectoRepository } from "../../domain/repository/ProyectoRepository";
-import { RecursoInvalido } from "../../domain/error/RecursoInvalido";
 import { ListarRecursosImpl } from "./ListarRecursosImpl";
 import { ObtenerRecursoImpl } from "./ObtenerRecursoImpl";
 import { SubirRecursoImpl } from "./SubirRecursoImpl";
@@ -91,7 +90,26 @@ describe("SubirRecursoImpl", () => {
         tipo: "application/pdf",
         datos: new Uint8Array(),
       }),
-    ).rejects.toBeInstanceOf(RecursoInvalido);
+    ).rejects.toMatchObject({
+      codigo: "extension",
+      message: "La extensión del recurso no está permitida",
+    });
+  });
+
+  it("distingue un nombre sin tallo de una extensión no permitida", async () => {
+    const subir = new SubirRecursoImpl(crearRepositorio());
+
+    await expect(
+      subir.ejecutar({
+        carpeta: "Fracciones",
+        nombre: ".png",
+        tipo: "image/png",
+        datos: new Uint8Array(),
+      }),
+    ).rejects.toMatchObject({
+      codigo: "nombre",
+      message: "La extensión del recurso no está permitida",
+    });
   });
 
   it("acepta exactamente 10 MiB y rechaza un byte adicional", async () => {
@@ -113,7 +131,10 @@ describe("SubirRecursoImpl", () => {
         ...entrada,
         datos: new Uint8Array(10 * 1024 * 1024 + 1),
       }),
-    ).rejects.toBeInstanceOf(RecursoInvalido);
+    ).rejects.toMatchObject({
+      codigo: "tamano",
+      message: "El recurso excede el tamaño máximo de 10 MiB",
+    });
   });
 
   it("delega la escritura única y devuelve el nombre asignado", async () => {

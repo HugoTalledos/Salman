@@ -1,10 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { ClientOptions } from "@anthropic-ai/sdk";
 import type {
   PeticionLLM,
   ProveedorLLM,
 } from "../../application/port/ProveedorLLM";
 
 const MODELO_POR_DEFECTO = "claude-opus-4-8";
+type CrearClienteAnthropic = (opciones: ClientOptions) => Anthropic;
 
 /**
  * Proveedor Anthropic (el default de Salman). Credenciales: el SDK resuelve
@@ -13,8 +15,12 @@ const MODELO_POR_DEFECTO = "claude-opus-4-8";
  */
 export function crearProveedorAnthropic(
   entorno: NodeJS.ProcessEnv = process.env,
+  crearCliente: CrearClienteAnthropic = (opciones) => new Anthropic(opciones),
 ): ProveedorLLM {
-  const cliente = new Anthropic();
+  const cliente = crearCliente({
+    apiKey: entorno.ANTHROPIC_API_KEY ?? null,
+    authToken: entorno.ANTHROPIC_AUTH_TOKEN ?? null,
+  });
   const modelo = entorno.SALMAN_LLM_MODELO ?? MODELO_POR_DEFECTO;
 
   return {

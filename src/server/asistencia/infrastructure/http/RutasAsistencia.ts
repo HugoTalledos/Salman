@@ -5,6 +5,10 @@ import {
   NombreProyectoInvalido,
   ProyectoNoExiste,
 } from "../../../clases/domain/error/ErroresProyecto";
+import {
+  ProveedorLLMNoDisponible,
+  RespuestaLLMInvalida,
+} from "../../domain/error/ErroresAsistencia";
 
 const CuerpoAsistente = z.object({
   mensajes: z
@@ -73,14 +77,17 @@ export function crearRutasAsistencia(
           400,
         );
       }
-      console.error("Error del proveedor LLM:", error);
-      return contexto.json(
-        {
-          error:
-            `El asistente no pudo responder: ${(error as Error).message}`,
-        },
-        502,
-      );
+      if (
+        error instanceof ProveedorLLMNoDisponible ||
+        error instanceof RespuestaLLMInvalida
+      ) {
+        console.error("Error del proveedor LLM:", error);
+        return contexto.json(
+          { error: `El asistente no pudo responder: ${error.message}` },
+          502,
+        );
+      }
+      throw error;
     }
   });
 

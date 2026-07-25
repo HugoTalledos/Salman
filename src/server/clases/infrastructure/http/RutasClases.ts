@@ -37,17 +37,26 @@ export interface DependenciasRutasClases {
   listarScaffolds(): readonly ResumenScaffold[];
 }
 
+function mensajeRecursoInvalido(error: RecursoInvalido): string {
+  switch (error.codigo) {
+    case "extension":
+    case "nombre":
+      return "Solo se aceptan imágenes (.png, .jpg, .jpeg, .gif, .webp, .svg)";
+    case "tamano":
+      return "La imagen supera los 10 MB";
+    default: {
+      const codigoExhaustivo: never = error.codigo;
+      return codigoExhaustivo;
+    }
+  }
+}
+
 function mensajeErrorHttp(error: Error): string {
   if (error instanceof ScaffoldNoExiste) {
     return error.message.replace(/^No existe el scaffold /, "Scaffold desconocido: ");
   }
   if (error instanceof RecursoInvalido) {
-    if (error.message.includes("extensión")) {
-      return "Solo se aceptan imágenes (.png, .jpg, .jpeg, .gif, .webp, .svg)";
-    }
-    if (error.message.includes("tamaño")) {
-      return "La imagen supera los 10 MB";
-    }
+    return mensajeRecursoInvalido(error);
   }
   return error.message;
 }

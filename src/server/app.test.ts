@@ -209,6 +209,24 @@ describe("Asistente Salman", () => {
     expect((await preguntar(conFake, "fantasma")).status).toBe(404);
   });
 
+  it("trata un clase.salman sintácticamente corrupto como error interno", async () => {
+    const carpeta = "Corrupta";
+    await fs.mkdir(path.join(base, carpeta), { recursive: true });
+    await fs.writeFile(path.join(base, carpeta, "clase.salman"), "{", "utf8");
+    const conFake = crearApp(base, {
+      llm: {
+        id: "fake",
+        completar: async () =>
+          JSON.stringify({ tipo: "informativa", mensaje: "ok" }),
+      },
+    });
+
+    const res = await preguntar(conFake, carpeta);
+
+    expect(res.status).toBe(500);
+    expect(await json<object>(res)).toEqual({ error: "Error interno" });
+  });
+
   it("si el proveedor falla responde 502 con el motivo", async () => {
     const roto = crearApp(base, {
       llm: {

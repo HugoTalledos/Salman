@@ -56,6 +56,28 @@ function resolverImport(importado: ImportEncontrado): string | null {
   );
 }
 
+function normalizarObjetivo(objetivo: string): string {
+  const sinExtension = objetivo.replace(/\.(?:ts|tsx|js|jsx)$/, "");
+  return sinExtension.endsWith("/index")
+    ? sinExtension.slice(0, -"/index".length)
+    : sinExtension;
+}
+
+function encontrarInfraccionesLegacy(
+  candidatos: ImportEncontrado[],
+): ImportEncontrado[] {
+  return candidatos.filter((importado) => {
+    const objetivo = resolverImport(importado);
+    if (objetivo === null) return false;
+    const relativo = path.relative(raizSrc, objetivo).split(path.sep).join("/");
+    const normalizado = normalizarObjetivo(relativo);
+    return objetivosLegacy.some(
+      (legacy) =>
+        normalizado === legacy || normalizado.startsWith(`${legacy}/`),
+    );
+  });
+}
+
 function describir(importado: ImportEncontrado): string {
   return `${importado.archivo}:${importado.linea} -> ${importado.modulo}`;
 }
@@ -88,15 +110,39 @@ describe("límites arquitectónicos", () => {
   });
 
   it("impide reintroducir imports a las fachadas legacy", () => {
-    const infracciones = imports.filter((importado) => {
-      const objetivo = resolverImport(importado);
-      if (objetivo === null) return false;
-      const relativo = path.relative(raizSrc, objetivo).split(path.sep).join("/");
-      return objetivosLegacy.some(
-        (legacy) => relativo === legacy || relativo.startsWith(`${legacy}/`),
-      );
-    });
+    const infracciones = encontrarInfraccionesLegacy(imports);
 
     expect(infracciones.map(describir)).toEqual([]);
+  });
+
+  it.each([
+    ["schema/clase.ts", "schema/clase"],
+    ["server/store.tsx", "server/store"],
+    ["server/asistente.js", "server/asistente"],
+    ["server/respuesta-asistente.jsx", "server/respuesta-asistente"],
+    ["scaffolds/index.ts", "scaffolds"],
+    ["compiler/index.jsx", "compiler"],
+  ])("normaliza el objetivo %s como %s", (objetivo, esperado) => {
+    expect(normalizarObjetivo(objetivo)).toBe(esperado);
+  });
+
+  it("detecta fixtures mutantes con extensiones explícitas e index", () => {
+    const fixtures: ImportEncontrado[] = [
+      { archivo: "server/mutacion.ts", linea: 1, modulo: "../schema/clase.ts" },
+      { archivo: "server/mutacion.ts", linea: 2, modulo: "./store.tsx" },
+      { archivo: "server/mutacion.ts", linea: 3, modulo: "./asistente.js" },
+      {
+        archivo: "server/mutacion.ts",
+        linea: 4,
+        modulo: "./respuesta-asistente.jsx",
+      },
+      { archivo: "server/mutacion.ts", linea: 5, modulo: "./llm/index.ts" },
+      { archivo: "server/mutacion.ts", linea: 6, modulo: "../scaffolds/index.tsx" },
+      { archivo: "server/mutacion.ts", linea: 7, modulo: "../compiler/index.js" },
+      { archivo: "server/mutacion.ts", linea: 8, modulo: "../asistente/index.jsx" },
+    ];
+
+    expect(encontrarInfraccionesLegacy(fixtures).map(({ modulo }) => modulo))
+      .toEqual(fixtures.map(({ modulo }) => modulo));
   });
 });

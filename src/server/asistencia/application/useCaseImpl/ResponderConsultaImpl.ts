@@ -10,7 +10,10 @@ import {
   parsearRespuestaAsistente,
   type RespuestaAsistente,
 } from "../../domain/entity/RespuestaAsistente";
-import { RespuestaLLMInvalida } from "../../domain/error/ErroresAsistencia";
+import {
+  ProveedorLLMNoDisponible,
+  RespuestaLLMInvalida,
+} from "../../domain/error/ErroresAsistencia";
 import { POLITICA_ASISTENTE } from "../../domain/policy/PoliticaAsistente";
 
 export const MENSAJE_REPARACION =
@@ -35,6 +38,20 @@ function anotarBloquesSeleccionados(
   );
 }
 
+async function completar(
+  proveedor: ProveedorLLM,
+  peticion: Parameters<ProveedorLLM["completar"]>[0],
+): Promise<string> {
+  try {
+    return await proveedor.completar(peticion);
+  } catch (error) {
+    throw new ProveedorLLMNoDisponible(
+      error instanceof Error ? error.message : String(error),
+      error,
+    );
+  }
+}
+
 export async function responderConsultaSobreClase(
   proveedor: ProveedorLLM,
   clase: ClaseSalman,
@@ -43,7 +60,7 @@ export async function responderConsultaSobreClase(
 ): Promise<RespuestaAsistente> {
   const sistema = serializador.serializar(POLITICA_ASISTENTE, clase);
   const mensajes = anotarBloquesSeleccionados(mensajesConsulta);
-  const salidaInicial = await proveedor.completar({
+  const salidaInicial = await completar(proveedor, {
     sistema,
     mensajes,
     formato: "json",
@@ -52,7 +69,7 @@ export async function responderConsultaSobreClase(
   try {
     return parsearRespuestaAsistente(salidaInicial);
   } catch {
-    const salidaReparada = await proveedor.completar({
+    const salidaReparada = await completar(proveedor, {
       sistema,
       mensajes: [
         ...mensajes,
