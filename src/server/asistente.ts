@@ -74,7 +74,8 @@ Reglas de comportamiento:
 Contrato de respuesta estructurada:
 - Clasifica cada respuesta como "informativa" o "accionable". Devuelve únicamente JSON válido, sin Markdown ni explicación.
 - Una respuesta informativa no propone cambios: ejemplo válido: {"tipo":"informativa","mensaje":"La secuencia es clara para el grupo."}.
-- Una respuesta accionable propone exactamente tres alternativas significativamente diferentes. Usa solo ids presentes en el fuente como anclas; nunca pongas una fase dentro de otra fase y nunca edites, elimines ni muevas bloques existentes. Ejemplo válido: ${ejemploAccionable}.
+- Una respuesta accionable propone exactamente tres alternativas significativamente diferentes y concisas. Cada alternativa contiene exactamente un bloque nuevo y el campo "contenido" de ese bloque tiene máximo 100 caracteres.
+- Usa UUID v4 nuevos y únicos para cada acción y bloque. Usa solo ids presentes en el fuente como anclas; nunca pongas una fase dentro de otra fase y nunca edites, elimines ni muevas bloques existentes. Ejemplo válido: ${ejemploAccionable}.
 
 Este es el fuente actual de la clase (clase.salman):
 

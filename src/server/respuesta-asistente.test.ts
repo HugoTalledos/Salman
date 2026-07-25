@@ -26,7 +26,11 @@ describe("obtenerRespuestaAsistente", () => {
       { rol: "usuario", contenido: "¿Está completa?" },
     ])).resolves.toEqual({ tipo: "informativa", mensaje: "Todo bien." });
     expect(fake.peticiones).toHaveLength(1);
+    expect(fake.peticiones[0].formato).toBe("json");
     expect(fake.peticiones[0].sistema).toContain("Devuelve únicamente JSON válido");
+    expect(fake.peticiones[0].sistema).toContain("exactamente un bloque nuevo");
+    expect(fake.peticiones[0].sistema).toContain("100 caracteres");
+    expect(fake.peticiones[0].sistema).toContain("UUID v4 nuevos y únicos");
     expect(fake.peticiones[0].sistema).toContain(
       `"anclaId":"${claseEjemplo.bloques[0].id}"`,
     );
@@ -54,6 +58,7 @@ describe("obtenerRespuestaAsistente", () => {
       { rol: "usuario", contenido: "¿Está completa?" },
     ])).resolves.toMatchObject({ mensaje: "Corregida." });
     expect(fake.peticiones).toHaveLength(2);
+    expect(fake.peticiones.map(({ formato }) => formato)).toEqual(["json", "json"]);
     expect(fake.peticiones[1].mensajes).toEqual([
       { rol: "usuario", contenido: "¿Está completa?" },
       { rol: "asistente", contenido: "no es json" },
@@ -61,11 +66,19 @@ describe("obtenerRespuestaAsistente", () => {
         rol: "usuario",
         contenido:
           "Tu respuesta anterior no cumple el contrato. Devuelve únicamente JSON válido, " +
-          "sin Markdown ni explicación, y conserva la intención de la respuesta.",
+          "sin Markdown ni explicación, con exactamente tres acciones, exactamente un bloque " +
+          "nuevo por acción, contenido de máximo 100 caracteres, UUID v4 nuevos y únicos para " +
+          "cada acción y bloque, y anclas que sean IDs existentes del fuente. Conserva la " +
+          "intención de la respuesta.",
       },
     ]);
-    expect(fake.peticiones[1].mensajes.at(-1)?.contenido)
-      .toContain("Devuelve únicamente JSON válido");
+    const reparacion = fake.peticiones[1].mensajes.at(-1)?.contenido;
+    expect(reparacion).toContain("Devuelve únicamente JSON válido");
+    expect(reparacion).toContain("exactamente tres acciones");
+    expect(reparacion).toContain("exactamente un bloque nuevo por acción");
+    expect(reparacion).toContain("máximo 100 caracteres");
+    expect(reparacion).toContain("UUID v4 nuevos y únicos");
+    expect(reparacion).toContain("anclas que sean IDs existentes");
   });
 
   it("falla después de dos salidas inválidas", async () => {

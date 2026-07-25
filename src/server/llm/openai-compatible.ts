@@ -24,7 +24,7 @@ export function crearProveedorOpenAICompatible(): ProveedorLLM {
 
   return {
     id: "openai-compatible",
-    async completar({ sistema, mensajes }: PeticionLLM): Promise<string> {
+    async completar({ sistema, mensajes, formato }: PeticionLLM): Promise<string> {
       const res = await fetch(`${base}/chat/completions`, {
         method: "POST",
         headers: {
@@ -40,6 +40,9 @@ export function crearProveedorOpenAICompatible(): ProveedorLLM {
               content: m.contenido,
             })),
           ],
+          ...(formato === "json"
+            ? { response_format: { type: "json_object" } }
+            : {}),
         }),
       });
       if (!res.ok) {

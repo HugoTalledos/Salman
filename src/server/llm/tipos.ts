@@ -14,6 +14,8 @@ export interface PeticionLLM {
   sistema: string;
   /** Historial de la conversación, alternando usuario/asistente. */
   mensajes: MensajeLLM[];
+  /** Formato estructurado solicitado, si el proveedor ofrece soporte nativo. */
+  formato?: "json";
 }
 
 export interface ProveedorLLM {
