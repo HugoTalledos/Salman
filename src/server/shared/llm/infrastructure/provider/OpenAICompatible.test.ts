@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { crearProveedorOpenAICompatible } from "./openai-compatible";
+import { crearProveedorOpenAICompatible } from "./OpenAICompatible";
 
 afterEach(() => {
   vi.unstubAllEnvs();
