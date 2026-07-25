@@ -66,6 +66,21 @@ describe("ProyectoFileSystemRepository", () => {
     await expect(repositorio.guardar("fantasma", claseEjemplo)).rejects.toThrow(/No existe/);
   });
 
+  it("borra el proyecto completo con sus recursos", async () => {
+    const carpeta = await repositorio.crear(claseEjemplo);
+    await repositorio.escribirRecurso(carpeta, "mapa.png", new Uint8Array([1]));
+
+    await repositorio.borrar(carpeta);
+
+    await expect(fs.access(path.join(base, carpeta))).rejects.toThrow();
+    await expect(repositorio.obtener(carpeta)).rejects.toThrow(/No existe/);
+  });
+
+  it("rechaza borrar proyectos inexistentes o identificadores inseguros", async () => {
+    await expect(repositorio.borrar("fantasma")).rejects.toThrow(/No existe/);
+    await expect(repositorio.borrar("../fuera")).rejects.toThrow(/inválido/);
+  });
+
   it("rechaza identificadores con path traversal", async () => {
     for (const malicioso of ["../fuera", "a/b", "..", ".oculta"]) {
       await expect(repositorio.obtener(malicioso)).rejects.toThrow(/inválido/);

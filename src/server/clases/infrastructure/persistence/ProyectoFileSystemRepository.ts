@@ -112,6 +112,12 @@ export class ProyectoFileSystemRepository implements ProyectoRepository {
     await fs.writeFile(path.join(directorio, ARCHIVO_CLASE), escribirClase(clase), "utf8");
   }
 
+  async borrar(carpeta: string): Promise<void> {
+    validarNombreSimple(carpeta);
+    await this.verificarProyecto(carpeta);
+    await fs.rm(path.join(this.base, carpeta), { recursive: true });
+  }
+
   async escribirRecurso(
     carpeta: string,
     nombre: string,

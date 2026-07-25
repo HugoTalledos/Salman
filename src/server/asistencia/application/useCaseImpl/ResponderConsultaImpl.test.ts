@@ -46,6 +46,8 @@ class RepositorioFake implements ProyectoRepository {
     throw new Error("No implementado en este fake");
   }
 
+  async borrar(): Promise<void> {}
+
   async escribirRecurso(): Promise<void> {
     throw new Error("No implementado en este fake");
   }

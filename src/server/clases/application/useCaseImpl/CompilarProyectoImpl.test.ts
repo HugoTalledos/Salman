@@ -41,6 +41,8 @@ class RepositorioFake implements ProyectoRepository {
     throw new Error("No esperado");
   }
 
+  async borrar(): Promise<void> {}
+
   async escribirRecursoUnico(): Promise<string> {
     throw new Error("No esperado");
   }

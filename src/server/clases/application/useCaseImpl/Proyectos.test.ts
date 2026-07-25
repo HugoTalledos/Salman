@@ -8,6 +8,7 @@ import type {
   ResumenProyecto,
 } from "../../domain/repository/ProyectoRepository";
 import type { CatalogoScaffolds } from "../port/CatalogoScaffolds";
+import { BorrarProyectoImpl } from "./BorrarProyectoImpl";
 import { CrearProyectoImpl } from "./CrearProyectoImpl";
 import { GuardarProyectoImpl } from "./GuardarProyectoImpl";
 import { ListarProyectosImpl } from "./ListarProyectosImpl";
@@ -25,6 +26,7 @@ class RepositorioFake implements ProyectoRepository {
   creada: ClaseSalman | undefined;
   guardada: { carpeta: string; clase: ClaseSalman } | undefined;
   carpetaObtenida: string | undefined;
+  carpetaBorrada: string | undefined;
   listarLlamado = false;
   private readonly resumenes: ResumenProyecto[];
   private readonly clase: ClaseSalman;
@@ -54,6 +56,10 @@ class RepositorioFake implements ProyectoRepository {
 
   async guardar(carpeta: string, clase: ClaseSalman): Promise<void> {
     this.guardada = { carpeta, clase };
+  }
+
+  async borrar(carpeta: string): Promise<void> {
+    this.carpetaBorrada = carpeta;
   }
 
   async escribirRecurso(): Promise<void> {}
@@ -140,6 +146,16 @@ describe("GuardarProyectoImpl", () => {
 
     expect(Date.parse(guardada.modificado)).toBeGreaterThan(Date.parse(clase.modificado));
     expect(repositorio.guardada).toEqual({ carpeta: "Libre", clase: guardada });
+  });
+});
+
+describe("BorrarProyectoImpl", () => {
+  it("delega el borrado de la carpeta solicitada", async () => {
+    const repositorio = new RepositorioFake();
+
+    await new BorrarProyectoImpl(repositorio).ejecutar("Fracciones");
+
+    expect(repositorio.carpetaBorrada).toBe("Fracciones");
   });
 });
 
