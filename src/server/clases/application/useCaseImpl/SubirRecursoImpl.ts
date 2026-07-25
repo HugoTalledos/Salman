@@ -36,7 +36,7 @@ export class SubirRecursoImpl implements SubirRecurso {
   ): Promise<{ recurso: string }> {
     const indiceExtension = entrada.nombre.lastIndexOf(".");
     const extension =
-      indiceExtension >= 0
+      indiceExtension > 0
         ? entrada.nombre.slice(indiceExtension).toLowerCase()
         : "";
 

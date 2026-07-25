@@ -1,47 +1,26 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { ARCHIVO_POR_TARGET, compilarClase } from "../compiler/compilar";
-import { crearClase, obtenerScaffold, scaffolds } from "../scaffolds";
-import { ClaseSalman } from "../schema/clase";
+import { CompilarProyectoImpl } from "./clases/application/useCaseImpl/CompilarProyectoImpl";
+import { CrearProyectoImpl } from "./clases/application/useCaseImpl/CrearProyectoImpl";
+import { GuardarProyectoImpl } from "./clases/application/useCaseImpl/GuardarProyectoImpl";
+import { ListarProyectosImpl } from "./clases/application/useCaseImpl/ListarProyectosImpl";
+import { ListarRecursosImpl } from "./clases/application/useCaseImpl/ListarRecursosImpl";
+import { ObtenerProyectoImpl } from "./clases/application/useCaseImpl/ObtenerProyectoImpl";
+import { ObtenerRecursoImpl } from "./clases/application/useCaseImpl/ObtenerRecursoImpl";
+import { SubirRecursoImpl } from "./clases/application/useCaseImpl/SubirRecursoImpl";
+import { CompiladorHtml } from "./clases/infrastructure/compiler/CompiladorHtml";
+import { crearRutasClases } from "./clases/infrastructure/http/RutasClases";
+import { crearRutasRecursos } from "./clases/infrastructure/http/RutasRecursos";
+import { ProyectoFileSystemRepository } from "./clases/infrastructure/persistence/ProyectoFileSystemRepository";
+import { catalogoScaffolds } from "./clases/infrastructure/scaffold/CatalogoScaffolds";
 import { obtenerProveedorLLM, type ProveedorLLM } from "./llm";
 import { obtenerRespuestaAsistente } from "./respuesta-asistente";
-import {
-  crearProyecto,
-  ErrorStore,
-  escribirRecurso,
-  escribirRecursoUnico,
-  guardarProyecto,
-  leerProyecto,
-  leerRecurso,
-  listarProyectos,
-  listarRecursos,
-  nombreCarpeta,
-} from "./store";
-
-const EXTENSIONES_IMAGEN = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]);
-const TAMANO_MAXIMO = 10 * 1024 * 1024;
-
-const MIME: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".pdf": "application/pdf",
-};
+import { ErrorStore, leerProyecto } from "./store";
 
 /**
  * API local de proyectos. La UI nunca toca el filesystem: todo pasa por aquí.
  * `base` se inyecta para que las pruebas usen un directorio temporal.
  */
-
-/** Cuerpo de POST /api/proyectos. `scaffoldId: null` crea una clase en blanco. */
-const CuerpoCrear = z.object({
-  titulo: z.string().trim().min(1, "El título es obligatorio"),
-  scaffoldId: z.string().nullable(),
-});
 
 const CuerpoAsistente = z.object({
   mensajes: z
@@ -67,6 +46,16 @@ export interface OpcionesApp {
 }
 export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
   const app = new Hono();
+  const repositorio = new ProyectoFileSystemRepository(base);
+  const compilador = new CompiladorHtml();
+  const crearProyecto = new CrearProyectoImpl(repositorio, catalogoScaffolds);
+  const listarProyectos = new ListarProyectosImpl(repositorio);
+  const obtenerProyecto = new ObtenerProyectoImpl(repositorio);
+  const guardarProyecto = new GuardarProyectoImpl(repositorio);
+  const compilarProyecto = new CompilarProyectoImpl(repositorio, compilador);
+  const subirRecurso = new SubirRecursoImpl(repositorio);
+  const listarRecursos = new ListarRecursosImpl(repositorio);
+  const obtenerRecurso = new ObtenerRecursoImpl(repositorio);
 
   // El proveedor se resuelve perezosamente para que el servidor arranque
   // sin credenciales: el error se informa al usar el asistente, no antes.
@@ -97,85 +86,25 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
     return c.json({ error: "Error interno" }, 500);
   });
 
-  app.get("/api/scaffolds", (c) => {
-    return c.json({
-      scaffolds: scaffolds.map(({ id, nombre, version, descripcion, modelo, metodo }) => ({
-        id,
-        nombre,
-        version,
-        descripcion,
-        modelo,
-        metodo,
-      })),
-    });
-  });
-
-  app.get("/api/proyectos", async (c) => {
-    return c.json({ proyectos: await listarProyectos(base) });
-  });
-
-  app.post("/api/proyectos", async (c) => {
-    const { titulo, scaffoldId } = CuerpoCrear.parse(await c.req.json());
-    const scaffold = scaffoldId === null ? null : obtenerScaffold(scaffoldId);
-    if (scaffold === undefined) {
-      return c.json({ error: `Scaffold desconocido: ${scaffoldId}` }, 400);
-    }
-    const clase = crearClase(titulo, scaffold);
-    const carpeta = await crearProyecto(base, clase);
-    return c.json({ carpeta, clase }, 201);
-  });
-
-  app.get("/api/proyectos/:carpeta", async (c) => {
-    const clase = await leerProyecto(base, c.req.param("carpeta"));
-    return c.json({ clase });
-  });
-
-  /** Compila el fuente EN DISCO a sus dos artefactos dentro de recursos/. */
-  app.post("/api/proyectos/:carpeta/compilar", async (c) => {
-    const carpeta = c.req.param("carpeta");
-    const clase = await leerProyecto(base, carpeta);
-    for (const doc of ["guia", "material"] as const) {
-      await escribirRecurso(
-        base,
-        carpeta,
-        ARCHIVO_POR_TARGET[doc],
-        compilarClase(clase, doc),
-      );
-    }
-    return c.json({ archivos: ARCHIVO_POR_TARGET });
-  });
-
-  /** Sube una imagen a recursos/. Multipart con el campo "archivo". */
-  app.post("/api/proyectos/:carpeta/recursos", async (c) => {
-    const { archivo } = await c.req.parseBody();
-    if (!(archivo instanceof File)) {
-      return c.json({ error: "Falta el campo «archivo»" }, 400);
-    }
-    if (archivo.size > TAMANO_MAXIMO) {
-      return c.json({ error: "La imagen supera los 10 MB" }, 400);
-    }
-    const punto = archivo.name.lastIndexOf(".");
-    const extension = punto > 0 ? archivo.name.slice(punto).toLowerCase() : "";
-    if (!EXTENSIONES_IMAGEN.has(extension)) {
-      return c.json(
-        { error: `Solo se aceptan imágenes (${[...EXTENSIONES_IMAGEN].join(", ")})` },
-        400,
-      );
-    }
-    // el saneador de títulos sirve igual para el tallo del nombre de archivo
-    const tallo = nombreCarpeta(archivo.name.slice(0, punto));
-    const nombre = await escribirRecursoUnico(
-      base,
-      c.req.param("carpeta"),
-      `${tallo}${extension}`,
-      new Uint8Array(await archivo.arrayBuffer()),
-    );
-    return c.json({ recurso: `recursos/${nombre}` }, 201);
-  });
-
-  app.get("/api/proyectos/:carpeta/recursos", async (c) => {
-    return c.json({ archivos: await listarRecursos(base, c.req.param("carpeta")) });
-  });
+  app.route(
+    "/",
+    crearRutasClases({
+      crearProyecto,
+      listarProyectos,
+      obtenerProyecto,
+      guardarProyecto,
+      compilarProyecto,
+      listarScaffolds: () => catalogoScaffolds.listar(),
+    }),
+  );
+  app.route(
+    "/",
+    crearRutasRecursos({
+      subirRecurso,
+      listarRecursos,
+      obtenerRecurso,
+    }),
+  );
 
   /** Conversación con el Asistente Salman sobre el fuente EN DISCO. */
   app.post("/api/proyectos/:carpeta/asistente", async (c) => {
@@ -212,22 +141,6 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
         502,
       );
     }
-  });
-
-  app.get("/api/proyectos/:carpeta/recursos/:archivo", async (c) => {
-    const archivo = c.req.param("archivo");
-    const datos = await leerRecurso(base, c.req.param("carpeta"), archivo);
-    const extension = archivo.slice(archivo.lastIndexOf(".")).toLowerCase();
-    return c.body(new Uint8Array(datos), 200, {
-      "content-type": MIME[extension] ?? "application/octet-stream",
-    });
-  });
-
-  app.put("/api/proyectos/:carpeta", async (c) => {
-    const clase = ClaseSalman.parse(await c.req.json());
-    const guardada = { ...clase, modificado: new Date().toISOString() };
-    await guardarProyecto(base, c.req.param("carpeta"), guardada);
-    return c.json({ clase: guardada });
   });
 
   return app;
