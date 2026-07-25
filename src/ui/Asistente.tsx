@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import type { AccionAsistente } from "../asistente/acciones";
+import type { BloqueEditor } from "../mapping/mapeo";
+import { AccionesAsistente } from "./AccionesAsistente";
+import { describirUbicacion } from "./aplicarAccion";
 import { api, type MensajeAsistente } from "./api";
 import type { BloqueAdjunto } from "./bloques";
 
 /** Un mensaje local: lo que viaja a la API más las etiquetas para mostrar. */
-type MensajeLocal = MensajeAsistente & { etiquetas?: string[] };
+type MensajeLocal = MensajeAsistente & {
+  etiquetas?: string[];
+  acciones?: AccionAsistente[];
+};
 
 /**
  * Barra lateral derecha: conversación con el Asistente Salman.
@@ -16,12 +23,18 @@ export function Asistente({
   adjuntos,
   quitarAdjunto,
   limpiarAdjuntos,
+  documentoActual,
+  aplicarAccionDocumento,
 }: {
   carpeta: string;
   /** Bloques señalados desde el editor, pendientes de enviar. */
   adjuntos: BloqueAdjunto[];
   quitarAdjunto: (id: string) => void;
   limpiarAdjuntos: () => void;
+  documentoActual: () => BloqueEditor[];
+  aplicarAccionDocumento: (
+    accion: AccionAsistente,
+  ) => { ok: true } | { ok: false; error: string };
 }) {
   const [mensajes, setMensajes] = useState<MensajeLocal[]>([]);
   const [borrador, setBorrador] = useState("");
@@ -60,7 +73,14 @@ export function Asistente({
           ...(bloques?.length ? { bloques } : {}),
         })),
       );
-      setMensajes([...conversacion, { rol: "asistente", contenido: respuesta }]);
+      setMensajes([
+        ...conversacion,
+        {
+          rol: "asistente",
+          contenido: respuesta.mensaje,
+          ...(respuesta.tipo === "accionable" ? { acciones: respuesta.acciones } : {}),
+        },
+      ]);
       limpiarAdjuntos(); // solo cuando el mensaje llegó: si falla, se conservan
     } catch (e) {
       setError((e as Error).message);
@@ -91,6 +111,13 @@ export function Asistente({
               <span className="burbuja-adjuntos">📎 {m.etiquetas.join(" · ")}</span>
             )}
             {m.contenido}
+            {m.rol === "asistente" && m.acciones && (
+              <AccionesAsistente
+                acciones={m.acciones}
+                describir={(accion) => describirUbicacion(documentoActual(), accion)}
+                aplicar={aplicarAccionDocumento}
+              />
+            )}
           </div>
         ))}
         {pensando && <div className="burbuja burbuja-asistente pensando">Pensando…</div>}

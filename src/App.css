@@ -697,3 +697,109 @@ body.redimensionando {
   font-size: 0.85rem;
   margin-top: 4px;
 }
+
+/* Propuestas accionables del asistente */
+
+.acciones-asistente {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  white-space: normal;
+}
+
+.accion-tarjeta {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.accion-tarjeta h3,
+.accion-tarjeta h4,
+.accion-tarjeta p {
+  margin: 0 0 6px;
+}
+
+.accion-tarjeta h3 {
+  font-size: 0.85rem;
+}
+
+.accion-tarjeta h4,
+.accion-tarjeta p {
+  font-size: 0.78rem;
+}
+
+.accion-tarjeta > button,
+.accion-botones button {
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--fondo);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.accion-tarjeta button:not(:disabled):hover,
+.accion-tarjeta button:not(:disabled):focus-visible {
+  border-color: var(--acento);
+  outline: none;
+}
+
+.accion-vista-previa {
+  min-width: 0;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--borde);
+}
+
+.accion-vista-previa > ul,
+.accion-bloque > ul {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accion-bloque {
+  min-width: 0;
+  padding: 6px 7px;
+  border-left: 2px solid var(--acento);
+  border-radius: 4px;
+  background: var(--fondo);
+  overflow-wrap: anywhere;
+}
+
+.accion-bloque p:last-child {
+  margin-bottom: 0;
+}
+
+.accion-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.accion-estado {
+  color: var(--material);
+  font-weight: 650;
+}
+
+.accion-aplicada {
+  border-color: var(--material);
+}
+
+.accion-deshabilitada {
+  opacity: 0.55;
+}
+
+.accion-tarjeta button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

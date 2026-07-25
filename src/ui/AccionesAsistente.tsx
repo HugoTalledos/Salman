@@ -43,16 +43,25 @@ export function AccionesAsistente(props: {
   }
 
   return (
-    <section aria-label="Propuestas del asistente">
+    <section className="acciones-asistente" aria-label="Propuestas del asistente">
       {props.acciones.map((accion) => {
         const deshabilitada = accionAplicadaId !== null && accion.id !== accionAplicadaId;
         const seleccionada = accion.id === accionSeleccionadaId;
+        const aplicada = accionAplicadaId === accion.id;
 
         return (
-          <article key={accion.id} aria-label={accion.titulo}>
+          <article
+            key={accion.id}
+            className={[
+              "accion-tarjeta",
+              aplicada ? "accion-aplicada" : "",
+              deshabilitada ? "accion-deshabilitada" : "",
+            ].filter(Boolean).join(" ")}
+            aria-label={accion.titulo}
+          >
             <h3>{accion.titulo}</h3>
             <p>{accion.beneficio}</p>
-            {accionAplicadaId === accion.id && <p>Agregada</p>}
+            {aplicada && <p className="accion-estado">Agregada</p>}
             <button
               type="button"
               disabled={deshabilitada}
@@ -62,29 +71,32 @@ export function AccionesAsistente(props: {
             </button>
 
             {seleccionada && (
-              <section aria-label={`Vista previa: ${accion.titulo}`}>
+              <section
+                className="accion-vista-previa"
+                aria-label={`Vista previa: ${accion.titulo}`}
+              >
                 <h4>Vista previa</h4>
                 {ubicacionVencida ? (
                   <p role="alert">La ubicación de esta propuesta ya no existe.</p>
                 ) : (
-                  <>
-                    <p>{ubicacion}</p>
-                    <ul>
-                      {accion.bloques.map((bloque) => (
-                        <VistaBloque key={bloque.id} bloque={bloque} />
-                      ))}
-                    </ul>
-                  </>
+                  <p>{ubicacion}</p>
                 )}
+                <ul>
+                  {accion.bloques.map((bloque) => (
+                    <VistaBloque key={bloque.id} bloque={bloque} />
+                  ))}
+                </ul>
                 {error && <p role="alert">{error}</p>}
-                <button type="button" onClick={cancelar}>
-                  Cancelar
-                </button>
-                {!ubicacionVencida && accionAplicadaId !== accion.id && (
-                  <button type="button" onClick={confirmar}>
-                    Agregar al documento
+                <div className="accion-botones">
+                  <button type="button" onClick={cancelar}>
+                    Cancelar
                   </button>
-                )}
+                  {!ubicacionVencida && accionAplicadaId !== accion.id && (
+                    <button type="button" onClick={confirmar}>
+                      Agregar al documento
+                    </button>
+                  )}
+                </div>
               </section>
             )}
           </article>
@@ -97,7 +109,7 @@ export function AccionesAsistente(props: {
 function VistaBloque({ bloque }: { bloque: BloqueInsertable }): JSX.Element {
   if (bloque.tipo === "fase") {
     return (
-      <li>
+      <li className="accion-bloque">
         <p>{`${bloque.tipo} · ${bloque.target}`}</p>
         <p>{bloque.titulo}</p>
         {bloque.duracionMinutos && <p>{`${bloque.duracionMinutos} min`}</p>}
@@ -111,7 +123,7 @@ function VistaBloque({ bloque }: { bloque: BloqueInsertable }): JSX.Element {
   }
 
   return (
-    <li>
+    <li className="accion-bloque">
       <p>{`${bloque.tipo} · ${bloque.target}`}</p>
       <p>{bloque.contenido}</p>
     </li>

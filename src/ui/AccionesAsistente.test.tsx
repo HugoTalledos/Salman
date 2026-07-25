@@ -106,11 +106,12 @@ describe("AccionesAsistente", () => {
     await user.click(screen.getByRole("button", { name: "Agregar al documento" }));
 
     expect(aplicar).toHaveBeenCalledWith(acciones[0]);
+    expect(aplicar).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Agregada")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Agregar al documento" })).toBeNull();
-    expect(
-      (screen.getAllByRole("button", { name: "Ver propuesta" })[1] as HTMLButtonElement).disabled,
-    ).toBe(true);
+    const alternativas = screen.getAllByRole("button", { name: "Ver propuesta" });
+    expect((alternativas[1] as HTMLButtonElement).disabled).toBe(true);
+    expect((alternativas[2] as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("cierra la vista previa al cancelar sin aplicar la propuesta", async () => {
@@ -133,6 +134,8 @@ describe("AccionesAsistente", () => {
     await user.click(screen.getAllByRole("button", { name: "Ver propuesta" })[2]);
 
     expect(screen.getByRole("alert")).not.toBeNull();
+    expect(screen.getByText("fase · ambos")).not.toBeNull();
+    expect(screen.getByText("Cierre")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Agregar al documento" })).toBeNull();
     expect(aplicar).not.toHaveBeenCalled();
   });

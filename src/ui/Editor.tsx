@@ -3,11 +3,13 @@ import "@blocknote/mantine/style.css";
 import { SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { AccionAsistente } from "../asistente/acciones";
 import { type BloqueEditor, claseDesdeEditor, editorDesdeClase } from "../mapping/mapeo";
 import type { ClaseSalman, Target } from "../schema/clase";
 import { api } from "./api";
 import { ArchivosProyecto } from "./ArchivosProyecto";
 import { Asistente } from "./Asistente";
+import { aplicarAccion } from "./aplicarAccion";
 import {
   type BloqueAdjunto,
   ContextoAdjuntar,
@@ -167,6 +169,20 @@ function EditorCargado({
     programarGuardado();
   };
 
+  const confirmarAccion = (accion: AccionAsistente) => {
+    const actual = editor.document as unknown as BloqueEditor[];
+    const resultado = aplicarAccion(actual, accion);
+    if (!resultado.ok) return resultado;
+
+    editor.replaceBlocks(
+      editor.document.map(({ id }) => id),
+      resultado.bloques as unknown as (typeof esquemaEditor.PartialBlock)[],
+    );
+    editor.setTextCursorPosition(resultado.primerId, "start");
+    programarGuardado();
+    return { ok: true as const };
+  };
+
   const volver = async () => {
     clearTimeout(timerRef.current);
     if (estado === "pendiente" || estado === "guardando") await guardarAhora();
@@ -285,6 +301,8 @@ function EditorCargado({
               setAdjuntos((previos) => previos.filter((a) => a.id !== id))
             }
             limpiarAdjuntos={() => setAdjuntos([])}
+            documentoActual={() => editor.document as unknown as BloqueEditor[]}
+            aplicarAccionDocumento={confirmarAccion}
           />
         </div>
       </div>
