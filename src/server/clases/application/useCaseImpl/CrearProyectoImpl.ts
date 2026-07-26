@@ -1,4 +1,5 @@
 import type { CrearProyecto } from "../useCase/CrearProyecto";
+import type { MetadatosClase } from "../../domain/entity/Clase";
 import { ScaffoldNoExiste } from "../../domain/error/ErroresProyecto";
 import type { ProyectoRepository } from "../../domain/repository/ProyectoRepository";
 import { crearClase } from "../../domain/service/CrearClase";
@@ -19,6 +20,7 @@ export class CrearProyectoImpl implements CrearProyecto {
   async ejecutar(entrada: {
     titulo: string;
     scaffoldId: string | null;
+    metadatos: MetadatosClase;
   }) {
     const scaffold = entrada.scaffoldId !== null
       ? this.catalogoScaffolds.obtener(entrada.scaffoldId) ?? null
@@ -27,7 +29,7 @@ export class CrearProyectoImpl implements CrearProyecto {
       throw new ScaffoldNoExiste(`No existe el scaffold ${entrada.scaffoldId}`);
     }
 
-    const clase = crearClase(entrada.titulo, scaffold);
+    const clase = crearClase(entrada.titulo, scaffold, entrada.metadatos);
     const carpeta = await this.repositorio.crear(clase);
     return { carpeta, clase };
   }

@@ -88,15 +88,22 @@ describe("CrearProyectoImpl", () => {
   it("crea y persiste una clase desde el scaffold solicitado", async () => {
     const repositorio = new RepositorioFake();
     const crearProyecto = new CrearProyectoImpl(repositorio, catalogoFake(scaffoldEjemplo));
+    const metadatos = {
+      materia: "Matemáticas",
+      grado: "5.º",
+      objetivos: ["Comparar fracciones"],
+    };
 
     const proyecto = await crearProyecto.ejecutar({
       titulo: "Fracciones",
       scaffoldId: "inicio-desarrollo-cierre",
+      metadatos,
     });
 
     expect(proyecto.carpeta).toBe("Fracciones");
     expect(proyecto.clase.titulo).toBe("Fracciones");
     expect(proyecto.clase.scaffold).toMatchObject({ id: "inicio-desarrollo-cierre" });
+    expect(proyecto.clase.metadatos).toEqual(metadatos);
     expect(repositorio.creada).toEqual(proyecto.clase);
   });
 
@@ -104,7 +111,11 @@ describe("CrearProyectoImpl", () => {
     const repositorio = new RepositorioFake();
     const crearProyecto = new CrearProyectoImpl(repositorio, catalogoFake(scaffoldEjemplo));
 
-    const proyecto = await crearProyecto.ejecutar({ titulo: "Libre", scaffoldId: null });
+    const proyecto = await crearProyecto.ejecutar({
+      titulo: "Libre",
+      scaffoldId: null,
+      metadatos: {},
+    });
 
     expect(proyecto).toMatchObject({
       carpeta: "Libre",
@@ -120,7 +131,11 @@ describe("CrearProyectoImpl", () => {
     );
 
     await expect(
-      crearProyecto.ejecutar({ titulo: "Fracciones", scaffoldId: "desconocido" }),
+      crearProyecto.ejecutar({
+        titulo: "Fracciones",
+        scaffoldId: "desconocido",
+        metadatos: {},
+      }),
     ).rejects.toBeInstanceOf(ScaffoldNoExiste);
   });
 
@@ -131,7 +146,7 @@ describe("CrearProyectoImpl", () => {
     );
 
     await expect(
-      crearProyecto.ejecutar({ titulo: "Fracciones", scaffoldId: "" }),
+      crearProyecto.ejecutar({ titulo: "Fracciones", scaffoldId: "", metadatos: {} }),
     ).rejects.toBeInstanceOf(ScaffoldNoExiste);
   });
 });

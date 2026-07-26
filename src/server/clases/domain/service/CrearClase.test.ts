@@ -62,4 +62,14 @@ describe("crearClase en blanco", () => {
     expect(clase.bloques).toEqual([]);
     expect(() => ClaseSalman.parse(clase)).not.toThrow();
   });
+
+  it("conserva los metadatos indicados", () => {
+    const metadatos = {
+      materia: "Matemáticas",
+      grado: "5.º",
+      objetivos: ["Comparar fracciones"],
+    };
+
+    expect(crearClase("Fracciones", null, metadatos).metadatos).toEqual(metadatos);
+  });
 });
