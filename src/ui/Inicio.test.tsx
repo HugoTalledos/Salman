@@ -17,10 +17,12 @@ const proyectos = [{
   scaffold: null,
 }];
 
-function renderizarInicio() {
-  vi.spyOn(api, "listarProyectos").mockResolvedValue(proyectos);
+function renderizarInicio(proyectosListados = proyectos) {
+  vi.spyOn(api, "listarProyectos").mockResolvedValue(proyectosListados);
   vi.spyOn(api, "listarScaffolds").mockResolvedValue([]);
-  render(<Inicio alAbrir={vi.fn()} />);
+  const alAbrir = vi.fn();
+  render(<Inicio alAbrir={alAbrir} />);
+  return { alAbrir };
 }
 
 function promesaDiferida() {
@@ -37,7 +39,8 @@ describe("Inicio", () => {
     renderizarInicio();
     await screen.findByText("Fracciones");
 
-    await user.click(screen.getByRole("button", { name: "Borrar clase Fracciones" }));
+    const botonInvocador = screen.getByRole("button", { name: "Borrar clase Fracciones" });
+    await user.click(botonInvocador);
 
     const dialogo = screen.getByRole("dialog");
     expect(dialogo).not.toBeNull();
@@ -50,6 +53,7 @@ describe("Inicio", () => {
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByText("Fracciones")).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(botonInvocador));
   });
 
   it("confirma el borrado y retira la clase del listado", async () => {
@@ -64,6 +68,9 @@ describe("Inicio", () => {
     await waitFor(() => expect(api.borrarProyecto).toHaveBeenCalledWith("Fracciones"));
     expect(screen.queryByText("Fracciones")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Mis clases" }),
+    ));
   });
 
   it("conserva el diálogo y la clase cuando el borrado falla", async () => {
@@ -85,18 +92,50 @@ describe("Inicio", () => {
     renderizarInicio();
     await screen.findByText("Fracciones");
 
-    await user.click(screen.getByRole("button", { name: "Borrar clase Fracciones" }));
+    const botonInvocador = screen.getByRole("button", { name: "Borrar clase Fracciones" });
+    await user.click(botonInvocador);
     await user.keyboard("{Escape}");
 
     expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(botonInvocador));
+  });
+
+  it("confina Tab en el diálogo e impide activar el fondo", async () => {
+    const user = userEvent.setup();
+    const { alAbrir } = renderizarInicio();
+    await screen.findByText("Fracciones");
+    const botonAbrirFondo = screen.getByRole("button", {
+      name: /^FraccionesClase en blanco/,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Borrar clase Fracciones" }));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancelar" }));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Borrar$/ }));
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancelar" }));
+
+    await user.click(botonAbrirFondo);
+    expect(alAbrir).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).not.toBeNull();
   });
 
   it("deshabilita confirmar y cancelar mientras el borrado está pendiente", async () => {
     const user = userEvent.setup();
     const diferida = promesaDiferida();
     vi.spyOn(api, "borrarProyecto").mockReturnValue(diferida.promesa);
-    renderizarInicio();
+    renderizarInicio([
+      proyectos[0],
+      {
+        carpeta: "Algebra",
+        titulo: "Álgebra",
+        modificado: "2026-07-25T11:00:00.000Z",
+        scaffold: null,
+      },
+    ]);
     await screen.findByText("Fracciones");
+    const botonBorrarAlgebra = screen.getByRole("button", { name: "Borrar clase Álgebra" });
 
     await user.click(screen.getByRole("button", { name: "Borrar clase Fracciones" }));
     await user.click(screen.getByRole("button", { name: /^Borrar$/ }));
@@ -104,7 +143,16 @@ describe("Inicio", () => {
     await waitFor(() => expect(api.borrarProyecto).toHaveBeenCalledWith("Fracciones"));
     expect((screen.getByRole("button", { name: /^Borrar$/ }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Cancelar" }) as HTMLButtonElement).disabled).toBe(true);
+    const dialogo = screen.getByRole("dialog");
+    expect(dialogo).not.toBeNull();
+
+    await user.tab();
+    expect(document.activeElement).toBe(dialogo);
+    await user.keyboard("{Escape}");
     expect(screen.getByRole("dialog")).not.toBeNull();
+    await user.click(botonBorrarAlgebra);
+    expect(screen.getByText("¿Borrar “Fracciones”?"))
+      .not.toBeNull();
 
     diferida.resolver();
   });
