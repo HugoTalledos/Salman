@@ -14,6 +14,7 @@ import { ObtenerProyectoImpl } from "../../application/useCaseImpl/ObtenerProyec
 import { ObtenerRecursoImpl } from "../../application/useCaseImpl/ObtenerRecursoImpl";
 import { SubirRecursoImpl } from "../../application/useCaseImpl/SubirRecursoImpl";
 import { CompiladorHtml } from "../compiler/CompiladorHtml";
+import { catalogoMetadatosClase } from "../catalogo/CatalogoMetadatosClaseEstatico";
 import { ProyectoFileSystemRepository } from "../persistence/ProyectoFileSystemRepository";
 import { catalogoScaffolds } from "../scaffold/CatalogoScaffolds";
 import { crearRutasClases } from "./RutasClases";
@@ -36,6 +37,7 @@ function dependenciasClases(repositorio: ProyectoFileSystemRepository) {
     guardarProyecto: new GuardarProyectoImpl(repositorio),
     compilarProyecto: new CompilarProyectoImpl(repositorio, new CompiladorHtml()),
     listarScaffolds: () => catalogoScaffolds.listar(),
+    catalogoMetadatos: catalogoMetadatosClase,
   };
 }
 
@@ -70,6 +72,48 @@ afterEach(async () => {
 });
 
 describe("API de proyectos", () => {
+  const metadatosValidos = {
+    materia: "Matemáticas",
+    grado: "5.º",
+    objetivos: [
+      "Resolver problemas aplicando conceptos matemáticos",
+      "Comparar fracciones en situaciones cotidianas",
+    ],
+  };
+
+  it("GET /api/catalogos/clase expone materias y grados disponibles", async () => {
+    expect(await json(await app.request("/api/catalogos/clase"))).toEqual({
+      materias: expect.arrayContaining(["Matemáticas", "Ciencias Naturales"]),
+      grados: ["Preescolar", "1.º", "2.º", "3.º", "4.º", "5.º", "6.º",
+        "7.º", "8.º", "9.º", "10.º", "11.º"],
+    });
+  });
+
+  it("GET /api/objetivos devuelve los objetivos de la materia consultada", async () => {
+    const res = await app.request(
+      "/api/objetivos?materia=Matem%C3%A1ticas&grado=5.%C2%BA&titulo=Fracciones",
+    );
+
+    expect(res.status).toBe(200);
+    expect(await json(res)).toEqual({
+      objetivos: [
+        "Resolver problemas aplicando conceptos matemáticos",
+        "Explicar procedimientos y justificar resultados",
+        "Representar relaciones usando lenguaje matemático",
+      ],
+    });
+  });
+
+  it("GET /api/objetivos rechaza una materia desconocida", async () => {
+    const res = await app.request("/api/objetivos?materia=Astronom%C3%ADa");
+
+    expect(res.status).toBe(400);
+    expect(await json(res)).toMatchObject({
+      error: "Documento inválido",
+      detalles: [expect.objectContaining({ code: "custom" })],
+    });
+  });
+
   it("DELETE borra la clase y deja de listarla", async () => {
     const carpeta = await repositorio.crear(claseEjemplo);
 
@@ -150,23 +194,32 @@ describe("API de proyectos", () => {
     expect(scaffolds[0]).not.toHaveProperty("semilla");
   });
 
-  it("POST crea un proyecto desde scaffold: carpeta en disco y semilla poblada", async () => {
+  it("POST crea un proyecto desde scaffold con metadatos persistidos", async () => {
     const res = await app.request("/api/proyectos", {
       method: "POST",
-      body: JSON.stringify({ titulo: "Fracciones", scaffoldId: "inicio-desarrollo-cierre" }),
+      body: JSON.stringify({
+        titulo: "Fracciones",
+        scaffoldId: "inicio-desarrollo-cierre",
+        metadatos: metadatosValidos,
+      }),
       headers: { "content-type": "application/json" },
     });
     expect(res.status).toBe(201);
     const { carpeta, clase } = await json<RespuestaClase>(res);
     expect(carpeta).toBe("Fracciones");
     expect(clase.bloques).toHaveLength(3);
+    expect(clase.metadatos).toEqual(metadatosValidos);
     expect(await repositorio.obtener(carpeta)).toEqual(clase);
   });
 
   it("POST con scaffoldId null crea una clase en blanco", async () => {
     const res = await app.request("/api/proyectos", {
       method: "POST",
-      body: JSON.stringify({ titulo: "Libre", scaffoldId: null }),
+      body: JSON.stringify({
+        titulo: "Libre",
+        scaffoldId: null,
+        metadatos: metadatosValidos,
+      }),
       headers: { "content-type": "application/json" },
     });
     expect(res.status).toBe(201);
@@ -178,7 +231,11 @@ describe("API de proyectos", () => {
   it("POST con scaffold desconocido conserva el error HTTP actual", async () => {
     const res = await app.request("/api/proyectos", {
       method: "POST",
-      body: JSON.stringify({ titulo: "X", scaffoldId: "no-existe" }),
+      body: JSON.stringify({
+        titulo: "X",
+        scaffoldId: "no-existe",
+        metadatos: metadatosValidos,
+      }),
       headers: { "content-type": "application/json" },
     });
 
@@ -191,7 +248,7 @@ describe("API de proyectos", () => {
   it("POST con título vacío responde 400 con detalles", async () => {
     const res = await app.request("/api/proyectos", {
       method: "POST",
-      body: JSON.stringify({ titulo: "   ", scaffoldId: null }),
+      body: JSON.stringify({ titulo: "   ", scaffoldId: null, metadatos: metadatosValidos }),
       headers: { "content-type": "application/json" },
     });
 
@@ -200,6 +257,65 @@ describe("API de proyectos", () => {
       error: "Documento inválido",
       detalles: [{ path: ["titulo"] }],
     });
+  });
+
+  it("POST rechaza una materia desconocida en los metadatos", async () => {
+    const res = await app.request("/api/proyectos", {
+      method: "POST",
+      body: JSON.stringify({
+        titulo: "Constelaciones",
+        scaffoldId: null,
+        metadatos: { ...metadatosValidos, materia: "Astronomía" },
+      }),
+      headers: { "content-type": "application/json" },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("POST rechaza un grado desconocido en los metadatos", async () => {
+    const res = await app.request("/api/proyectos", {
+      method: "POST",
+      body: JSON.stringify({
+        titulo: "Fracciones",
+        scaffoldId: null,
+        metadatos: { ...metadatosValidos, grado: "12.º" },
+      }),
+      headers: { "content-type": "application/json" },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("POST rechaza objetivos vacíos tras normalizarlos", async () => {
+    const res = await app.request("/api/proyectos", {
+      method: "POST",
+      body: JSON.stringify({
+        titulo: "Fracciones",
+        scaffoldId: null,
+        metadatos: { ...metadatosValidos, objetivos: ["   "] },
+      }),
+      headers: { "content-type": "application/json" },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("POST rechaza objetivos duplicados tras normalizarlos", async () => {
+    const res = await app.request("/api/proyectos", {
+      method: "POST",
+      body: JSON.stringify({
+        titulo: "Fracciones",
+        scaffoldId: null,
+        metadatos: {
+          ...metadatosValidos,
+          objetivos: ["Comparar fracciones", "  Comparar fracciones  "],
+        },
+      }),
+      headers: { "content-type": "application/json" },
+    });
+
+    expect(res.status).toBe(400);
   });
 
   it("POST compilar genera los dos artefactos en recursos/ y se sirven por GET", async () => {

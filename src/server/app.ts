@@ -9,6 +9,7 @@ import { ObtenerProyectoImpl } from "./clases/application/useCaseImpl/ObtenerPro
 import { ObtenerRecursoImpl } from "./clases/application/useCaseImpl/ObtenerRecursoImpl";
 import { SubirRecursoImpl } from "./clases/application/useCaseImpl/SubirRecursoImpl";
 import { CompiladorHtml } from "./clases/infrastructure/compiler/CompiladorHtml";
+import { catalogoMetadatosClase } from "./clases/infrastructure/catalogo/CatalogoMetadatosClaseEstatico";
 import {
   crearRutasClases,
   responderErrorHttp,
@@ -86,6 +87,7 @@ export function crearApp(base: string, opciones: OpcionesApp = {}): Hono {
       guardarProyecto,
       compilarProyecto,
       listarScaffolds: () => catalogoScaffolds.listar(),
+      catalogoMetadatos: catalogoMetadatosClase,
     }),
   );
   app.route(

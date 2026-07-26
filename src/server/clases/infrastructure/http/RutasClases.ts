@@ -6,6 +6,7 @@ import type { CrearProyecto } from "../../application/useCase/CrearProyecto";
 import type { GuardarProyecto } from "../../application/useCase/GuardarProyecto";
 import type { ListarProyectos } from "../../application/useCase/ListarProyectos";
 import type { ObtenerProyecto } from "../../application/useCase/ObtenerProyecto";
+import type { CatalogoMetadatosClase } from "../../application/port/CatalogoMetadatosClase";
 import { ClaseSalman } from "../../domain/entity/Clase";
 import {
   NombreProyectoInvalido,
@@ -15,10 +16,64 @@ import {
 } from "../../domain/error/ErroresProyecto";
 import { RecursoInvalido } from "../../domain/error/RecursoInvalido";
 
-const CuerpoCrear = z.object({
-  titulo: z.string().trim().min(1, "El título es obligatorio"),
-  scaffoldId: z.string().nullable(),
-});
+function crearEsquemaMetadatos(catalogo: CatalogoMetadatosClase) {
+  return z.object({
+    materia: z.string().trim().min(1),
+    grado: z.string().trim().min(1),
+    objetivos: z.array(z.string()),
+  }).superRefine(({ materia, grado, objetivos }, ctx) => {
+    if (!catalogo.listarMaterias().includes(materia)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["materia"],
+        message: "Materia desconocida",
+      });
+    }
+    if (!catalogo.listarGrados().includes(grado)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["grado"],
+        message: "Grado desconocido",
+      });
+    }
+
+    const normalizados = objetivos.map((objetivo) => objetivo.trim());
+    if (normalizados.some((objetivo) => objetivo.length === 0)) {
+      ctx.addIssue({ code: "custom", message: "Los objetivos no pueden estar vacíos" });
+    }
+    if (new Set(normalizados).size !== normalizados.length) {
+      ctx.addIssue({ code: "custom", message: "Los objetivos no pueden repetirse" });
+    }
+  }).transform(({ materia, grado, objetivos }) => ({
+    materia,
+    grado,
+    objetivos: objetivos.map((objetivo) => objetivo.trim()),
+  }));
+}
+
+function crearCuerpoCrear(catalogo: CatalogoMetadatosClase) {
+  return z.object({
+    titulo: z.string().trim().min(1, "El título es obligatorio"),
+    scaffoldId: z.string().nullable(),
+    metadatos: crearEsquemaMetadatos(catalogo),
+  });
+}
+
+function crearConsultaObjetivos(catalogo: CatalogoMetadatosClase) {
+  return z.object({
+    materia: z.string().trim().min(1),
+    grado: z.string().trim().optional(),
+    titulo: z.string().trim().optional(),
+  }).superRefine((consulta, ctx) => {
+    if (!catalogo.listarObjetivos(consulta)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["materia"],
+        message: "Materia desconocida",
+      });
+    }
+  });
+}
 
 export interface ResumenScaffold {
   id: string;
@@ -37,6 +92,7 @@ export interface DependenciasRutasClases {
   guardarProyecto: GuardarProyecto;
   compilarProyecto: CompilarProyecto;
   listarScaffolds(): readonly ResumenScaffold[];
+  catalogoMetadatos: CatalogoMetadatosClase;
 }
 
 function mensajeRecursoInvalido(error: RecursoInvalido): string {
@@ -92,6 +148,21 @@ export function crearRutasClases(
 ): Hono {
   const rutas = new Hono();
   rutas.onError(responderErrorHttp);
+  const cuerpoCrear = crearCuerpoCrear(dependencias.catalogoMetadatos);
+  const consultaObjetivos = crearConsultaObjetivos(dependencias.catalogoMetadatos);
+
+  rutas.get("/api/catalogos/clase", (contexto) => {
+    return contexto.json({
+      materias: dependencias.catalogoMetadatos.listarMaterias(),
+      grados: dependencias.catalogoMetadatos.listarGrados(),
+    });
+  });
+
+  rutas.get("/api/objetivos", (contexto) => {
+    const consulta = consultaObjetivos.parse(contexto.req.query());
+    const objetivos = dependencias.catalogoMetadatos.listarObjetivos(consulta);
+    return contexto.json({ objetivos });
+  });
 
   rutas.get("/api/scaffolds", (contexto) => {
     const scaffolds = dependencias.listarScaffolds().map(
@@ -113,7 +184,7 @@ export function crearRutasClases(
   });
 
   rutas.post("/api/proyectos", async (contexto) => {
-    const entrada = CuerpoCrear.parse(await contexto.req.json());
+    const entrada = cuerpoCrear.parse(await contexto.req.json());
     const proyecto = await dependencias.crearProyecto.ejecutar(entrada);
     return contexto.json(proyecto, 201);
   });
