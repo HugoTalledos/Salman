@@ -109,6 +109,40 @@
   text-align: left;
 }
 
+.fila-proyecto-con-acciones {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.fila-proyecto-con-acciones .fila-proyecto {
+  flex: 1;
+  min-width: 0;
+}
+
+.borrar-proyecto {
+  flex: none;
+  width: 44px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: #b91c1c;
+  font: inherit;
+  cursor: pointer;
+}
+
+.borrar-proyecto:hover {
+  border-color: #b91c1c;
+  background: #fef2f2;
+}
+
+.borrar-proyecto:focus-visible,
+.dialogo-borrar:focus-visible,
+.dialogo-acciones button:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
 .fila-proyecto:hover {
   border-color: var(--acento);
 }
@@ -121,6 +155,76 @@
   color: var(--texto-suave);
   font-size: 0.85rem;
   white-space: nowrap;
+}
+
+.dialogo-fondo {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(15 23 42 / 45%);
+}
+
+.dialogo-borrar {
+  width: min(100%, 440px);
+  padding: 24px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: 0 20px 40px rgb(15 23 42 / 25%);
+}
+
+.dialogo-borrar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.dialogo-borrar p {
+  margin: 12px 0 0;
+  color: var(--texto-suave);
+}
+
+.dialogo-borrar .mensaje-error {
+  color: #b91c1c;
+}
+
+.dialogo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.dialogo-acciones button {
+  padding: 8px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  font: inherit;
+}
+
+.dialogo-acciones .boton-borrar {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: white;
+}
+
+.dialogo-acciones button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 560px) {
+  .fila-proyecto {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .fila-detalle {
+    white-space: normal;
+  }
 }
 
 .pantalla-mensaje {

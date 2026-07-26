@@ -64,6 +64,11 @@ export const api = {
     return json(r);
   },
 
+  async borrarProyecto(carpeta: string): Promise<void> {
+    const r = await fetch(`/api/proyectos/${enc(carpeta)}`, { method: "DELETE" });
+    if (!r.ok) await json<never>(r);
+  },
+
   async compilar(carpeta: string): Promise<{ guia: string; material: string }> {
     const r = await fetch(`/api/proyectos/${enc(carpeta)}/compilar`, { method: "POST" });
     return (await json<{ archivos: { guia: string; material: string } }>(r)).archivos;

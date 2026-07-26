@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type InfoScaffold, type ResumenProyecto } from "./api";
 
 export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
@@ -7,11 +7,19 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [titulo, setTitulo] = useState("");
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [proyectoABorrar, setProyectoABorrar] = useState<ResumenProyecto | null>(null);
+  const [borrando, setBorrando] = useState(false);
+  const [errorBorrado, setErrorBorrado] = useState<string | null>(null);
+  const dialogoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.listarProyectos().then(setProyectos, (e: Error) => setError(e.message));
     api.listarScaffolds().then(setScaffolds, () => {});
   }, []);
+
+  useEffect(() => {
+    if (proyectoABorrar) dialogoRef.current?.focus();
+  }, [proyectoABorrar]);
 
   const crear = async (scaffoldId: string | null) => {
     if (!titulo.trim() || creando) return;
@@ -23,6 +31,34 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
     } catch (e) {
       setError((e as Error).message);
       setCreando(false);
+    }
+  };
+
+  const abrirDialogo = (proyecto: ResumenProyecto) => {
+    setErrorBorrado(null);
+    setProyectoABorrar(proyecto);
+  };
+
+  const cerrarDialogo = () => {
+    if (borrando) return;
+    setErrorBorrado(null);
+    setProyectoABorrar(null);
+  };
+
+  const confirmarBorrado = async () => {
+    if (!proyectoABorrar || borrando) return;
+    setBorrando(true);
+    setErrorBorrado(null);
+    try {
+      await api.borrarProyecto(proyectoABorrar.carpeta);
+      setProyectos((actuales) =>
+        actuales?.filter((p) => p.carpeta !== proyectoABorrar.carpeta) ?? null
+      );
+      setProyectoABorrar(null);
+    } catch (e) {
+      setErrorBorrado((e as Error).message);
+    } finally {
+      setBorrando(false);
     }
   };
 
@@ -84,24 +120,75 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
         <ul>
           {proyectos?.map((p) => (
             <li key={p.carpeta}>
-              <button
-                type="button"
-                className="fila-proyecto"
-                onClick={() => alAbrir(p.carpeta)}
-              >
-                <span className="fila-titulo">{p.titulo}</span>
-                <span className="fila-detalle">
-                  {p.scaffold ?? "Clase en blanco"} ·{" "}
-                  {new Date(p.modificado).toLocaleString("es-MX", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </span>
-              </button>
+              <div className="fila-proyecto-con-acciones">
+                <button
+                  type="button"
+                  className="fila-proyecto"
+                  onClick={() => alAbrir(p.carpeta)}
+                >
+                  <span className="fila-titulo">{p.titulo}</span>
+                  <span className="fila-detalle">
+                    {p.scaffold ?? "Clase en blanco"} ·{" "}
+                    {new Date(p.modificado).toLocaleString("es-MX", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="borrar-proyecto"
+                  aria-label={`Borrar clase ${p.titulo}`}
+                  onClick={() => abrirDialogo(p)}
+                >
+                  <span aria-hidden="true">🗑️</span>
+                </button>
+              </div>
             </li>
           ))}
         </ul>
       </section>
+
+      {proyectoABorrar && (
+        <div
+          className="dialogo-fondo"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !borrando) cerrarDialogo();
+          }}
+        >
+          <div
+            ref={dialogoRef}
+            className="dialogo-borrar"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialogo-borrar-titulo"
+            aria-describedby="dialogo-borrar-descripcion"
+            tabIndex={-1}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !borrando) cerrarDialogo();
+            }}
+          >
+            <h2 id="dialogo-borrar-titulo">¿Borrar “{proyectoABorrar.titulo}”?</h2>
+            <p id="dialogo-borrar-descripcion">
+              Esta acción eliminará la clase y no se puede deshacer.
+            </p>
+            {errorBorrado && <p className="mensaje-error" role="alert">{errorBorrado}</p>}
+            <div className="dialogo-acciones">
+              <button type="button" disabled={borrando} onClick={cerrarDialogo}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="boton-borrar"
+                disabled={borrando}
+                onClick={confirmarBorrado}
+              >
+                Borrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
