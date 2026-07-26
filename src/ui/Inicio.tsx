@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { HomeMainTitle } from "./components/molecules/Home/HomeMainTitle";
+import { BaseInput } from "./components/atom/input";
+import { BaseSelect } from "./components/atom/select";
+import { BaseChip } from "./components/atom/BaseChip/chip";
+import { BaseButton } from "./components/atom/button";
 import {
   api,
   type CatalogosClase,
@@ -218,70 +223,59 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
           dialogoRef.current?.focus();
         }}
       >
-        <header className="inicio-cabecera">
-          <h1>Salman</h1>
-          <p>Diseña, construye y compila tus clases.</p>
-        </header>
+        <HomeMainTitle />
 
         <section className="inicio-crear">
           <h2>Nueva clase</h2>
           <div className="crear-campos">
-            <label>
-              Título
-              <input
-                className="crear-titulo"
-                placeholder="Título de la clase, p. ej. «Los estados del agua»"
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-              />
-            </label>
-            <label>
-              Materia
-              <select value={materia} onChange={(e) => void cambiarMateria(e.target.value)}>
-                <option value="">Selecciona una materia</option>
-                {catalogos.materias.map((opcion) => (
-                  <option key={opcion} value={opcion}>{opcion}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Grado
-              <select value={grado} onChange={(e) => setGrado(e.target.value)}>
-                <option value="">Selecciona un grado</option>
-                {catalogos.grados.map((opcion) => (
-                  <option key={opcion} value={opcion}>{opcion}</option>
-                ))}
-              </select>
-            </label>
+            <BaseInput
+              label="Título"
+              placeholder="Título de la clase, p. ej. «Los estados del agua»"
+              value={titulo}
+              onChange={(text) => setTitulo(text)}
+            />
+            
+            <BaseSelect
+              label="Materia"
+              placeholder="Selecciona una materia"
+              options={catalogos.materias}
+              value={materia}
+              onSelect={(subject) => void cambiarMateria(subject)}
+            />
+
+            <BaseSelect
+              label="Grado"
+              placeholder="Selecciona un grado"
+              options={catalogos.grados}
+              value={grado}
+              onSelect={(grade) => void setGrado(grade)}
+            />
+
           </div>
           {cargandoObjetivos && <p className="objetivos-cargando">Cargando objetivos…</p>}
           {objetivosMostrados.length > 0 && (
             <div className="objetivos-chips">
               {objetivosMostrados.map((objetivo) => (
-                <button
-                  type="button"
-                  className="objetivo-chip"
-                  aria-pressed={objetivosSeleccionados.includes(objetivo)}
+                <BaseChip 
                   key={objetivo}
-                  onClick={() => alternarObjetivo(objetivo)}
-                >
-                  {objetivo}
-                </button>
+                  label={objetivo}
+                  ariaPressed={objetivosSeleccionados.includes(objetivo)}
+                  onChipSelected={() => alternarObjetivo(objetivo)}
+                />
               ))}
             </div>
           )}
           {materia && (
             <div className="objetivo-personalizado">
-              <label>
-                Objetivo personalizado
-                <input
-                  value={objetivoPersonalizado}
-                  onChange={(e) => setObjetivoPersonalizado(e.target.value)}
-                />
-              </label>
-              <button type="button" onClick={agregarObjetivoPersonalizado}>
-                Agregar objetivo
-              </button>
+              <BaseInput
+                label="Objetivo personalizado"
+                value={objetivoPersonalizado}
+                onChange={(objetivo) => setObjetivoPersonalizado(objetivo)}
+              />
+              <BaseButton
+                label="Agregar objetivo"
+                onClickBtn={agregarObjetivoPersonalizado}
+              />
             </div>
           )}
           {errorObjetivos && (
