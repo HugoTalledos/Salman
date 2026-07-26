@@ -6,15 +6,6 @@
   padding: 48px 24px 96px;
 }
 
-.inicio-cabecera h1 {
-  font-size: 2rem;
-  margin: 0;
-}
-
-.inicio-cabecera p {
-  color: var(--texto-suave);
-  margin: 4px 0 0;
-}
 
 .inicio-crear,
 .inicio-lista {
