@@ -170,7 +170,7 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
           >
             <h2 id="dialogo-borrar-titulo">¿Borrar “{proyectoABorrar.titulo}”?</h2>
             <p id="dialogo-borrar-descripcion">
-              Esta acción eliminará la clase y no se puede deshacer.
+              Esta acción eliminará la clase y sus recursos asociados, y no se puede deshacer.
             </p>
             {errorBorrado && <p className="mensaje-error" role="alert">{errorBorrado}</p>}
             <div className="dialogo-acciones">

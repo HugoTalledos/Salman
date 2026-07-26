@@ -43,6 +43,9 @@ describe("Inicio", () => {
     expect(dialogo).not.toBeNull();
     expect(screen.getByText("¿Borrar “Fracciones”?"))
       .not.toBeNull();
+    expect(screen.getByText(
+      "Esta acción eliminará la clase y sus recursos asociados, y no se puede deshacer.",
+    )).not.toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(dialogo));
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("dialog")).toBeNull();
