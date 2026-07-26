@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { ClientOptions } from "@anthropic-ai/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { crearProveedorAnthropic } from "./Anthropic";
 
 afterEach(() => {
@@ -73,5 +74,37 @@ describe("crearProveedorAnthropic", () => {
       { apiKey: "api-global", authToken: "token-global" },
     ]);
     expect(peticiones).toMatchObject([{ model: "claude-opus-4-8" }]);
+  });
+
+  it("envía output_config con el JSON schema cuando se pide un esquema de salida", async () => {
+    const opciones: ClientOptions[] = [];
+    const peticiones: unknown[] = [];
+    const proveedor = crearProveedorAnthropic(
+      { ANTHROPIC_API_KEY: "api" },
+      crearClienteFake(opciones, peticiones),
+    );
+
+    await proveedor.completar({
+      sistema: "Sistema",
+      mensajes: [{ rol: "usuario", contenido: "Pregunta" }],
+      esquemaSalida: {
+        nombre: "respuesta",
+        esquema: z.object({ respuesta: z.string() }),
+      },
+    });
+
+    expect(peticiones).toMatchObject([
+      {
+        output_config: {
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: { respuesta: { type: "string" } },
+            },
+          },
+        },
+      },
+    ]);
   });
 });

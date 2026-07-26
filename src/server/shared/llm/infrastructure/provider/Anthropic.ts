@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ClientOptions } from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type {
   PeticionLLM,
   ProveedorLLM,
@@ -25,10 +26,12 @@ export function crearProveedorAnthropic(
 
   return {
     id: "anthropic",
-    async completar({ sistema, mensajes }: PeticionLLM): Promise<string> {
+    async completar(
+      { sistema, mensajes, esquemaSalida }: PeticionLLM,
+    ): Promise<string> {
       let respuesta;
       try {
-        respuesta = await crear(cliente, modelo, sistema, mensajes);
+        respuesta = await crear(cliente, modelo, sistema, mensajes, esquemaSalida);
       } catch (err) {
         if (
           err instanceof Anthropic.AuthenticationError ||
@@ -56,6 +59,7 @@ function crear(
   modelo: string,
   sistema: string,
   mensajes: PeticionLLM["mensajes"],
+  esquemaSalida: PeticionLLM["esquemaSalida"],
 ) {
   return cliente.messages.create({
     model: modelo,
@@ -66,5 +70,8 @@ function crear(
       role: m.rol === "usuario" ? ("user" as const) : ("assistant" as const),
       content: m.contenido,
     })),
+    ...(esquemaSalida
+      ? { output_config: { format: zodOutputFormat(esquemaSalida.esquema) } }
+      : {}),
   });
 }
