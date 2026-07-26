@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type {
   PeticionLLM,
   ProveedorLLM,
@@ -29,7 +30,9 @@ export function crearProveedorOpenAICompatible(
 
   return {
     id: "openai-compatible",
-    async completar({ sistema, mensajes, formato }: PeticionLLM): Promise<string> {
+    async completar(
+      { sistema, mensajes, formato, esquemaSalida }: PeticionLLM,
+    ): Promise<string> {
       const res = await fetch(`${base}/chat/completions`, {
         method: "POST",
         headers: {
@@ -45,7 +48,18 @@ export function crearProveedorOpenAICompatible(
               content: m.contenido,
             })),
           ],
-          ...(formato === "json"
+          ...(esquemaSalida
+            ? {
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: esquemaSalida.nombre,
+                  schema: z.toJSONSchema(esquemaSalida.esquema),
+                  strict: false,
+                },
+              },
+            }
+            : formato === "json"
             ? { response_format: { type: "json_object" } }
             : {}),
         }),

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { crearProveedorOpenAICompatible } from "./OpenAICompatible";
 
 afterEach(() => {
@@ -50,5 +51,33 @@ describe("crearProveedorOpenAICompatible", () => {
     });
 
     expect(cuerpoEnviado(peticiones)).not.toHaveProperty("response_format");
+  });
+
+  it("traduce el esquema de salida a response_format json_schema", async () => {
+    const { proveedor, peticiones } = prepararProveedor();
+
+    await proveedor.completar({
+      sistema: "Sistema",
+      mensajes: [{ rol: "usuario", contenido: "Pregunta" }],
+      formato: "json",
+      esquemaSalida: {
+        nombre: "respuesta",
+        esquema: z.object({ respuesta: z.string() }),
+      },
+    });
+
+    expect(cuerpoEnviado(peticiones)).toMatchObject({
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "respuesta",
+          schema: {
+            type: "object",
+            properties: { respuesta: { type: "string" } },
+          },
+          strict: false,
+        },
+      },
+    });
   });
 });
