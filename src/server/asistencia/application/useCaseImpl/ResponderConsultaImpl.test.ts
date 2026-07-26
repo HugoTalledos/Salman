@@ -11,8 +11,14 @@ import type {
 } from "../../../shared/llm/application/port/ProveedorLLM";
 import type { SerializadorPrompt } from "../port/SerializadorPrompt";
 import { RespuestaLLMInvalida } from "../../domain/error/ErroresAsistencia";
+import { RespuestaAsistenteSchema } from "../../domain/entity/RespuestaAsistente";
 import { POLITICA_ASISTENTE } from "../../domain/policy/PoliticaAsistente";
 import { ResponderConsultaImpl } from "./ResponderConsultaImpl";
+
+const ESQUEMA_SALIDA = {
+  nombre: "respuesta_asistente",
+  esquema: RespuestaAsistenteSchema,
+};
 
 const MENSAJE_REPARACION =
   "Tu respuesta anterior no cumple el contrato. Devuelve únicamente JSON válido, " +
@@ -127,6 +133,7 @@ describe("ResponderConsultaImpl", () => {
         sistema: "sistema serializado",
         mensajes: [{ rol: "usuario", contenido: "¿Está completa?" }],
         formato: "json",
+        esquemaSalida: ESQUEMA_SALIDA,
       },
     ]);
   });
@@ -149,6 +156,7 @@ describe("ResponderConsultaImpl", () => {
         sistema: "sistema serializado",
         mensajes: [{ rol: "usuario", contenido: "¿Está completa?" }],
         formato: "json",
+        esquemaSalida: ESQUEMA_SALIDA,
       },
       {
         sistema: "sistema serializado",
@@ -158,6 +166,7 @@ describe("ResponderConsultaImpl", () => {
           { rol: "usuario", contenido: MENSAJE_REPARACION },
         ],
         formato: "json",
+        esquemaSalida: ESQUEMA_SALIDA,
       },
     ]);
   });

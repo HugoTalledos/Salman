@@ -1,6 +1,6 @@
 import type { ProyectoRepository } from "../../../clases/domain/repository/ProyectoRepository";
 import type { ClaseSalman } from "../../../clases/domain/entity/Clase";
-import type { ProveedorLLM } from "../../../shared/llm/application/port/ProveedorLLM";
+import type { PeticionLLM, ProveedorLLM } from "../../../shared/llm/application/port/ProveedorLLM";
 import type { SerializadorPrompt } from "../port/SerializadorPrompt";
 import type {
   MensajeConsulta,
@@ -8,6 +8,7 @@ import type {
 } from "../useCase/ResponderConsulta";
 import {
   parsearRespuestaAsistente,
+  RespuestaAsistenteSchema,
   type RespuestaAsistente,
 } from "../../domain/entity/RespuestaAsistente";
 import {
@@ -60,16 +61,22 @@ export async function responderConsultaSobreClase(
 ): Promise<RespuestaAsistente> {
   const sistema = serializador.serializar(POLITICA_ASISTENTE, clase);
   const mensajes = anotarBloquesSeleccionados(mensajesConsulta);
-  const salidaInicial = await completar(proveedor, {
+  const esquemaSalida = {
+    nombre: "respuesta_asistente",
+    esquema: RespuestaAsistenteSchema,
+  };
+  const body = {
     sistema,
     mensajes,
     formato: "json",
-  });
+    esquemaSalida,
+  } as PeticionLLM
+  const salidaInicial = await completar(proveedor, body);
 
   try {
     return parsearRespuestaAsistente(salidaInicial);
   } catch {
-    const salidaReparada = await completar(proveedor, {
+    const bodyRetry = {
       sistema,
       mensajes: [
         ...mensajes,
@@ -77,7 +84,9 @@ export async function responderConsultaSobreClase(
         { rol: "usuario", contenido: MENSAJE_REPARACION },
       ],
       formato: "json",
-    });
+      esquemaSalida,
+    } as PeticionLLM
+    const salidaReparada = await completar(proveedor, bodyRetry);
 
     try {
       return parsearRespuestaAsistente(salidaReparada);
