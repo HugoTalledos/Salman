@@ -1,10 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type InfoScaffold, type ResumenProyecto } from "./api";
+import {
+  api,
+  type CatalogosClase,
+  type InfoScaffold,
+  type ResumenProyecto,
+} from "./api";
 
 export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [proyectos, setProyectos] = useState<ResumenProyecto[] | null>(null);
   const [scaffolds, setScaffolds] = useState<InfoScaffold[]>([]);
+  const [catalogos, setCatalogos] = useState<CatalogosClase>({ materias: [], grados: [] });
   const [titulo, setTitulo] = useState("");
+  const [materia, setMateria] = useState("");
+  const [grado, setGrado] = useState("");
+  const [objetivosSugeridos, setObjetivosSugeridos] = useState<string[]>([]);
+  const [objetivosSeleccionados, setObjetivosSeleccionados] = useState<string[]>([]);
+  const [objetivosPersonalizados, setObjetivosPersonalizados] = useState<string[]>([]);
+  const [objetivoPersonalizado, setObjetivoPersonalizado] = useState("");
+  const [cargandoObjetivos, setCargandoObjetivos] = useState(false);
+  const [errorObjetivos, setErrorObjetivos] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [proyectoABorrar, setProyectoABorrar] = useState<ResumenProyecto | null>(null);
@@ -14,18 +28,86 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const botonInvocadorRef = useRef<HTMLButtonElement | null>(null);
   const tituloListaRef = useRef<HTMLHeadingElement>(null);
   const destinoFocoRef = useRef<HTMLElement | null>(null);
+  const solicitudObjetivosRef = useRef(0);
 
   useEffect(() => {
     api.listarProyectos().then(setProyectos, (e: Error) => setError(e.message));
     api.listarScaffolds().then(setScaffolds, () => {});
+    api.listarCatalogosClase().then(setCatalogos, (e: Error) => setError(e.message));
   }, []);
 
+  const objetivosMostrados = [...objetivosSugeridos, ...objetivosPersonalizados];
+  const formularioValido = Boolean(titulo.trim() && materia && grado);
+
+  const cambiarMateria = async (nuevaMateria: string) => {
+    const solicitud = ++solicitudObjetivosRef.current;
+    setMateria(nuevaMateria);
+    setObjetivosSugeridos([]);
+    setObjetivosSeleccionados([]);
+    setObjetivosPersonalizados([]);
+    setObjetivoPersonalizado("");
+    setErrorObjetivos(null);
+
+    if (!nuevaMateria) {
+      setCargandoObjetivos(false);
+      return;
+    }
+
+    setCargandoObjetivos(true);
+    try {
+      const objetivos = await api.listarObjetivos({
+        materia: nuevaMateria,
+        grado,
+        titulo: titulo.trim(),
+      });
+      if (solicitud === solicitudObjetivosRef.current) {
+        setObjetivosSugeridos(objetivos);
+      }
+    } catch (e) {
+      if (solicitud === solicitudObjetivosRef.current) {
+        setErrorObjetivos((e as Error).message);
+      }
+    } finally {
+      if (solicitud === solicitudObjetivosRef.current) {
+        setCargandoObjetivos(false);
+      }
+    }
+  };
+
+  const alternarObjetivo = (objetivo: string) => {
+    setObjetivosSeleccionados((actuales) =>
+      actuales.includes(objetivo)
+        ? actuales.filter((seleccionado) => seleccionado !== objetivo)
+        : [...actuales, objetivo]
+    );
+  };
+
+  const agregarObjetivoPersonalizado = () => {
+    const objetivo = objetivoPersonalizado.trim();
+    if (
+      !objetivo ||
+      objetivosSugeridos.includes(objetivo) ||
+      objetivosPersonalizados.includes(objetivo)
+    ) {
+      return;
+    }
+    setObjetivosPersonalizados((actuales) => [...actuales, objetivo]);
+    setObjetivosSeleccionados((actuales) => [...actuales, objetivo]);
+    setObjetivoPersonalizado("");
+  };
+
   const crear = async (scaffoldId: string | null) => {
-    if (!titulo.trim() || creando) return;
+    if (!formularioValido || creando) return;
     setCreando(true);
     setError(null);
     try {
-      const { carpeta } = await api.crearProyecto(titulo.trim(), scaffoldId);
+      const { carpeta } = await api.crearProyecto(titulo.trim(), scaffoldId, {
+        materia,
+        grado,
+        objetivos: objetivosMostrados.filter((objetivo) =>
+          objetivosSeleccionados.includes(objetivo)
+        ),
+      });
       alAbrir(carpeta);
     } catch (e) {
       setError((e as Error).message);
@@ -141,19 +223,75 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
 
         <section className="inicio-crear">
           <h2>Nueva clase</h2>
-          <input
-            className="crear-titulo"
-            placeholder="Título de la clase, p. ej. «Los estados del agua»"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-          />
+          <div className="crear-campos">
+            <label>
+              Título
+              <input
+                className="crear-titulo"
+                placeholder="Título de la clase, p. ej. «Los estados del agua»"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+              />
+            </label>
+            <label>
+              Materia
+              <select value={materia} onChange={(e) => void cambiarMateria(e.target.value)}>
+                <option value="">Selecciona una materia</option>
+                {catalogos.materias.map((opcion) => (
+                  <option key={opcion} value={opcion}>{opcion}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Grado
+              <select value={grado} onChange={(e) => setGrado(e.target.value)}>
+                <option value="">Selecciona un grado</option>
+                {catalogos.grados.map((opcion) => (
+                  <option key={opcion} value={opcion}>{opcion}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {cargandoObjetivos && <p className="objetivos-cargando">Cargando objetivos…</p>}
+          {objetivosMostrados.length > 0 && (
+            <div className="objetivos-chips">
+              {objetivosMostrados.map((objetivo) => (
+                <button
+                  type="button"
+                  className="objetivo-chip"
+                  aria-pressed={objetivosSeleccionados.includes(objetivo)}
+                  key={objetivo}
+                  onClick={() => alternarObjetivo(objetivo)}
+                >
+                  {objetivo}
+                </button>
+              ))}
+            </div>
+          )}
+          {materia && (
+            <div className="objetivo-personalizado">
+              <label>
+                Objetivo personalizado
+                <input
+                  value={objetivoPersonalizado}
+                  onChange={(e) => setObjetivoPersonalizado(e.target.value)}
+                />
+              </label>
+              <button type="button" onClick={agregarObjetivoPersonalizado}>
+                Agregar objetivo
+              </button>
+            </div>
+          )}
+          {errorObjetivos && (
+            <p className="mensaje-error" role="alert">{errorObjetivos}</p>
+          )}
           <div className="crear-opciones">
             {scaffolds.map((s) => (
               <button
                 type="button"
                 key={s.id}
                 className="tarjeta-scaffold"
-                disabled={!titulo.trim() || creando}
+                disabled={!formularioValido || creando}
                 onClick={() => crear(s.id)}
               >
                 <strong>{s.nombre}</strong>
@@ -168,7 +306,7 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
             <button
               type="button"
               className="tarjeta-scaffold tarjeta-blanca"
-              disabled={!titulo.trim() || creando}
+              disabled={!formularioValido || creando}
               onClick={() => crear(null)}
             >
               <strong>Clase en blanco</strong>
@@ -177,10 +315,12 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
               </span>
             </button>
           </div>
-          {!titulo.trim() && (
-            <p className="crear-pista">Escribe un título para habilitar las opciones.</p>
+          {!formularioValido && (
+            <p className="crear-pista">
+              Completa el título, la materia y el grado para habilitar las opciones.
+            </p>
           )}
-          {error && <p className="mensaje-error">{error}</p>}
+          {error && <p className="mensaje-error" role="alert">{error}</p>}
         </section>
 
         <section className="inicio-lista">

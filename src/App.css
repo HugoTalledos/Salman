@@ -27,18 +27,104 @@
   margin: 0 0 12px;
 }
 
-.crear-titulo {
+.crear-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.crear-campos > label:first-child {
+  grid-column: 1 / -1;
+}
+
+.crear-campos label,
+.objetivo-personalizado label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.crear-campos input,
+.crear-campos select,
+.objetivo-personalizado input {
   width: 100%;
   padding: 10px 14px;
+  font: inherit;
+  color: var(--texto);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.crear-campos input:focus-visible,
+.crear-campos select:focus-visible,
+.objetivo-personalizado input:focus-visible,
+.objetivo-personalizado button:focus-visible,
+.objetivo-chip:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.objetivos-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.objetivo-chip {
+  padding: 7px 11px;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+}
+
+.objetivo-chip:hover {
+  border-color: var(--acento);
+}
+
+.objetivo-chip[aria-pressed="true"] {
+  color: var(--guia);
+  border-color: var(--acento);
+  background: var(--guia-fondo);
+}
+
+.objetivo-personalizado {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.objetivo-personalizado label {
+  flex: 1;
+}
+
+.objetivo-personalizado button {
+  flex: none;
+  padding: 10px 14px;
+  color: var(--texto);
   font: inherit;
   border: 1px solid var(--borde);
   border-radius: 8px;
   background: var(--superficie);
 }
 
-.crear-titulo:focus {
-  outline: 2px solid var(--acento);
-  outline-offset: -1px;
+.objetivo-personalizado button:hover {
+  border-color: var(--acento);
+}
+
+.objetivos-cargando {
+  margin: 12px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
 }
 
 .crear-opciones {
@@ -217,6 +303,19 @@
 }
 
 @media (max-width: 560px) {
+  .crear-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .crear-campos > label:first-child {
+    grid-column: auto;
+  }
+
+  .objetivo-personalizado {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .fila-proyecto {
     align-items: flex-start;
     flex-wrap: wrap;
