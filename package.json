@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n servidor,web -c blue,green \"npm:servidor\" \"npm:web\"",
+    "local": "concurrently -n servidor,web -c blue,green \"npm:ollama\" \"npm:web\"",
+    "cloud": "concurrently -n servidor,web -c blue,green \"npm:openrouter\" \"npm:web\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "servidor": "tsx watch --env-file-if-exists=.env src/server/index.ts",
+    "ollama": "tsx watch --env-file-if-exists=.ollama.env src/server/index.ts",
+    "openrouter": "tsx watch --env-file-if-exists=.openrouter.env src/server/index.ts",
     "web": "vite",
     "typecheck": "tsc -b"
   },
