@@ -33,9 +33,18 @@ const claseCreada = {
   bloques: [],
 };
 
+const scaffolds = [{
+  id: "indagacion",
+  nombre: "Aprendizaje por indagación",
+  version: 1,
+  descripcion: "Organiza la clase alrededor de una pregunta.",
+  modelo: "Constructivista",
+  metodo: "Indagación",
+}];
+
 function renderizarInicio(proyectosListados = proyectos) {
   vi.spyOn(api, "listarProyectos").mockResolvedValue(proyectosListados);
-  vi.spyOn(api, "listarScaffolds").mockResolvedValue([]);
+  vi.spyOn(api, "listarScaffolds").mockResolvedValue(scaffolds);
   vi.spyOn(api, "listarCatalogosClase").mockResolvedValue({
     materias: ["Matemáticas", "Ciencias"],
     grados: ["5.º", "6.º"],
@@ -155,6 +164,8 @@ describe("Inicio", () => {
 
     const personalizado = screen.getByRole("button", { name: "Comparar fracciones" });
     expect(personalizado.getAttribute("aria-pressed")).toBe("true");
+    await user.click(personalizado);
+    expect(personalizado.getAttribute("aria-pressed")).toBe("false");
     await user.type(campoPersonalizado, " Comparar fracciones ");
     await user.click(screen.getByRole("button", { name: "Agregar objetivo" }));
     expect(screen.getAllByRole("button", { name: "Comparar fracciones" })).toHaveLength(1);
@@ -174,26 +185,66 @@ describe("Inicio", () => {
     expect((campoPersonalizado as HTMLInputElement).value).toBe("");
   });
 
+  it("deduplica un objetivo personalizado que llega después como sugerencia", async () => {
+    const user = userEvent.setup();
+    const respuestaObjetivos = promesaDiferidaConValor<string[]>();
+    vi.spyOn(api, "crearProyecto").mockResolvedValue({
+      carpeta: "fracciones",
+      clase: claseCreada,
+    });
+    renderizarInicio();
+    vi.mocked(api.listarObjetivos).mockReset().mockReturnValue(respuestaObjetivos.promesa);
+    await screen.findByRole("option", { name: "Matemáticas" });
+    await user.type(screen.getByLabelText("Título"), "Fracciones");
+    await user.selectOptions(screen.getByLabelText("Grado"), "5.º");
+    await user.selectOptions(screen.getByLabelText("Materia"), "Matemáticas");
+    await user.type(screen.getByLabelText("Objetivo personalizado"), "Comparar fracciones");
+    await user.click(screen.getByRole("button", { name: "Agregar objetivo" }));
+
+    await act(async () => {
+      respuestaObjetivos.resolver([
+        "Comparar fracciones",
+        "Resolver problemas aplicando conceptos matemáticos",
+      ]);
+      await respuestaObjetivos.promesa;
+    });
+
+    const objetivo = screen.getAllByRole("button", {
+      name: "Comparar fracciones",
+    });
+    expect(objetivo).toHaveLength(1);
+    expect(objetivo[0].getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("button", { name: /^Clase en blancoEmpieza/ }));
+    expect(api.crearProyecto).toHaveBeenCalledWith("Fracciones", null, {
+      materia: "Matemáticas",
+      grado: "5.º",
+      objetivos: ["Comparar fracciones"],
+    });
+  });
+
   it("mantiene las opciones de creación deshabilitadas hasta completar los campos requeridos", async () => {
     const user = userEvent.setup();
     renderizarInicio();
-    const crearEnBlanco = screen.getByRole("button", {
-      name: /^Clase en blancoEmpieza/,
-    });
+    const opcionesCreacion = [
+      await screen.findByRole("button", { name: /^Aprendizaje por indagación/ }),
+      screen.getByRole("button", {
+        name: /^Clase en blancoEmpieza/,
+      }),
+    ];
 
-    expect((crearEnBlanco as HTMLButtonElement).disabled).toBe(true);
+    expect(opcionesCreacion.every((opcion) => (opcion as HTMLButtonElement).disabled)).toBe(true);
     await user.type(screen.getByLabelText("Título"), "Fracciones");
-    expect((crearEnBlanco as HTMLButtonElement).disabled).toBe(true);
+    expect(opcionesCreacion.every((opcion) => (opcion as HTMLButtonElement).disabled)).toBe(true);
     await user.selectOptions(
       await screen.findByLabelText("Materia"),
       "Matemáticas",
     );
-    expect((crearEnBlanco as HTMLButtonElement).disabled).toBe(true);
+    expect(opcionesCreacion.every((opcion) => (opcion as HTMLButtonElement).disabled)).toBe(true);
     await user.selectOptions(screen.getByLabelText("Grado"), "5.º");
-    expect((crearEnBlanco as HTMLButtonElement).disabled).toBe(false);
+    expect(opcionesCreacion.every((opcion) => !(opcion as HTMLButtonElement).disabled)).toBe(true);
   });
 
-  it("crea la clase con los metadatos y objetivos en su orden visual", async () => {
+  it("crea desde un scaffold real con metadatos y objetivos en su orden visual", async () => {
     const user = userEvent.setup();
     vi.spyOn(api, "crearProyecto").mockResolvedValue({
       carpeta: "fracciones",
@@ -211,11 +262,11 @@ describe("Inicio", () => {
     await user.click(await screen.findByRole("button", {
       name: "Resolver problemas aplicando conceptos matemáticos",
     }));
-    await user.click(screen.getByRole("button", { name: /^Clase en blancoEmpieza/ }));
+    await user.click(screen.getByRole("button", { name: /^Aprendizaje por indagación/ }));
 
     expect(api.crearProyecto).toHaveBeenCalledWith(
       "Fracciones",
-      null,
+      "indagacion",
       {
         materia: "Matemáticas",
         grado: "5.º",

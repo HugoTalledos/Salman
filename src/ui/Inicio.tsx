@@ -36,7 +36,9 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
     api.listarCatalogosClase().then(setCatalogos, (e: Error) => setError(e.message));
   }, []);
 
-  const objetivosMostrados = [...objetivosSugeridos, ...objetivosPersonalizados];
+  const objetivosMostrados = [
+    ...new Set([...objetivosSugeridos, ...objetivosPersonalizados]),
+  ];
   const formularioValido = Boolean(titulo.trim() && materia && grado);
 
   const cambiarMateria = async (nuevaMateria: string) => {
