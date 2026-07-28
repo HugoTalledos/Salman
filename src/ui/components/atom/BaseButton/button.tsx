@@ -1,9 +1,12 @@
 import './button.css'
+type BaseButtonVariant = 'solid' | 'outline' | 'link'
+
 interface BaseButtonProps {
   label: string
   onClickBtn: (event: React.MouseEvent<HTMLButtonElement>) => void
   className?: string
   ariaLabel?: string
+  variant?: BaseButtonVariant
 }
 
 export function BaseButton ({
@@ -11,8 +14,9 @@ export function BaseButton ({
   onClickBtn,
   className,
   ariaLabel,
+  variant,
 }: BaseButtonProps) {
-  const classes = ['base-button', className].filter(Boolean).join(' ')
+  const classes = ['base-button', variant && `base-button--${variant}`, className].filter(Boolean).join(' ')
 
   return (
     <button

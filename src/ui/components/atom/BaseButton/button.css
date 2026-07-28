@@ -25,3 +25,33 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* solid: relleno con color de acento */
+.base-button--solid {
+  border-color: var(--acento);
+  background: var(--acento);
+  color: #fff;
+}
+
+.base-button--solid:hover:not(:disabled) {
+  border-color: var(--guia);
+  background: var(--guia);
+}
+
+/* outline: borde visible sin background */
+.base-button--outline {
+  background: transparent;
+}
+
+/* link: sin borde ni background, apariencia de enlace */
+.base-button--link {
+  border-color: transparent;
+  background: transparent;
+  color: var(--acento);
+  padding-inline: 0;
+}
+
+.base-button--link:hover:not(:disabled) {
+  border-color: transparent;
+  text-decoration: underline;
+}
