@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BaseInput } from "../../atom/input";
+import { BaseInput } from "../../atom/BaseInput/input";
 import { BaseSelect } from "../../atom/select";
 import { BaseChip } from "../../atom/BaseChip/chip";
 import { BaseButton } from "../../atom/BaseButton/button";
