@@ -5,6 +5,8 @@ import { BaseChip } from "../atom/BaseChip/chip";
 import { BaseButton } from "../atom/button";
 import { BaseMessage } from "../atom/BaseMessage/BaseMessage";
 import { api, type CatalogosClase, type InfoScaffold } from "../../api";
+import { LoadingMessage } from "../atom/BaseMessage/LoadingMessage";
+import { BaseCard } from "../atom/Card/card";
 
 export function CreateSubjectForm({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [scaffolds, setScaffolds] = useState<InfoScaffold[]>([]);
@@ -113,7 +115,7 @@ export function CreateSubjectForm({ alAbrir }: { alAbrir: (carpeta: string) => v
           onSelect={(grade) => void setGrado(grade)}
         />
       </div>
-      {cargandoObjetivos && <p className="objetivos-cargando">Cargando objetivos…</p>}
+      { cargandoObjetivos && <LoadingMessage text="Cargando objetivos…" /> }
       {objetivosMostrados.length > 0 && (
         <div className="objetivos-chips">
           {objetivosMostrados.map((objetivo) => (
@@ -139,31 +141,22 @@ export function CreateSubjectForm({ alAbrir }: { alAbrir: (carpeta: string) => v
       {errorObjetivos && <BaseMessage type="error" message={errorObjetivos} />}
       <div className="crear-opciones">
         {scaffolds.map((s) => (
-          <button
-            type="button"
+          <BaseCard
             key={s.id}
-            className="tarjeta-scaffold"
+            nombre={s.nombre}
+            descripcion={s.descripcion}
+            etiqueta={[s.modelo, s.metodo].filter(Boolean).join(' · ') || undefined}
             disabled={!formularioValido || creando}
             onClick={() => crear(s.id)}
-          >
-            <strong>{s.nombre}</strong>
-            <span className="tarjeta-descripcion">{s.descripcion}</span>
-            {(s.modelo || s.metodo) && (
-              <span className="tarjeta-pedagogia">
-                {[s.modelo, s.metodo].filter(Boolean).join(" · ")}
-              </span>
-            )}
-          </button>
+          />
         ))}
-        <button
-          type="button"
-          className="tarjeta-scaffold tarjeta-blanca"
+        <BaseCard
+          nombre="Clase en blanco"
+          descripcion="Empieza de cero, sin fases ni contenido sugerido."
+          variante="blanca"
           disabled={!formularioValido || creando}
           onClick={() => crear(null)}
-        >
-          <strong>Clase en blanco</strong>
-          <span className="tarjeta-descripcion">Empieza de cero, sin fases ni contenido sugerido.</span>
-        </button>
+        />
       </div>
       {!formularioValido && (
         <BaseMessage
