@@ -1,9 +1,14 @@
+import './input.css'
+
+type BaseInputVariant = 'outline' | 'ghost'
+
 interface BaseInputProps {
   label: string
   placeholder?: string
   value: string
   onChange: (valor: string) => void
   className?: string
+  variant?: BaseInputVariant
 }
 
 export function BaseInput({
@@ -12,12 +17,15 @@ export function BaseInput({
   value,
   onChange,
   className,
+  variant,
 }: BaseInputProps) {
+  const inputClasses = ['base-input', variant && `base-input--${variant}`, className].filter(Boolean).join(' ')
+
   return (
-    <label>
+    <label className="base-input-label">
       {label}
       <input
-        className={className}
+        className={inputClasses}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

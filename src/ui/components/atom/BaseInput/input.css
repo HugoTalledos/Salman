@@ -1,0 +1,51 @@
+.base-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.base-input {
+  width: 100%;
+  padding: 10px 14px;
+  font: inherit;
+  color: var(--texto);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  transition: border-color 0.15s;
+}
+
+.base-input:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.base-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* outline: borde más marcado, fondo transparente */
+.base-input--outline {
+  background: transparent;
+  border-color: var(--texto-suave);
+}
+
+.base-input--outline:focus-visible {
+  border-color: var(--acento);
+}
+
+/* ghost: sin borde visible, solo fondo sutil */
+.base-input--ghost {
+  border-color: transparent;
+  background: var(--ambos-fondo);
+}
+
+.base-input--ghost:focus-visible {
+  border-color: var(--acento);
+  outline: none;
+}
