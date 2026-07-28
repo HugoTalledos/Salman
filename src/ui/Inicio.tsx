@@ -3,6 +3,7 @@ import { HomeMainTitle } from "./components/molecules/Home/HomeMainTitle";
 import { api, type ResumenProyecto } from "./api";
 import { CreateSubjectForm } from "./components/organism/CreateSubjetForm";
 import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
+import { LoadingMessage } from "./components/atom/BaseMessage/LoadingMessage";
 
 export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [proyectos, setProyectos] = useState<ResumenProyecto[] | null>(null);
@@ -126,7 +127,7 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
         <section className="inicio-lista">
           <h2 ref={tituloListaRef} tabIndex={-1}>Mis clases</h2>
           { error && <BaseMessage type="error" message={error} /> }
-          {proyectos === null && <p>Cargando…</p>}
+          { proyectos === null && <LoadingMessage text="Cargando…" /> }
           {proyectos?.length === 0 && <p>Aún no hay clases. Crea la primera arriba.</p>}
           <ul>
             {proyectos?.map((p) => (
