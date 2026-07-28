@@ -4,6 +4,8 @@ import { api, type ResumenProyecto } from "./api";
 import { CreateSubjectForm } from "./components/organism/CreateSubjetForm";
 import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
 import { LoadingMessage } from "./components/atom/BaseMessage/LoadingMessage";
+import { BaseButton } from "./components/atom/button";
+import { BaseCard } from "./components/atom/Card/card";
 
 export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [proyectos, setProyectos] = useState<ResumenProyecto[] | null>(null);
@@ -128,33 +130,22 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
           <h2 ref={tituloListaRef} tabIndex={-1}>Mis clases</h2>
           { error && <BaseMessage type="error" message={error} /> }
           { proyectos === null && <LoadingMessage text="Cargando…" /> }
-          {proyectos?.length === 0 && <p>Aún no hay clases. Crea la primera arriba.</p>}
+          { proyectos?.length === 0 && <p>Aún no hay clases. Crea la primera arriba.</p> }
           <ul>
             {proyectos?.map((p) => (
               <li key={p.carpeta}>
                 <div className="fila-proyecto-con-acciones">
-                  <button
-                    type="button"
-                    className="fila-proyecto"
+                  <BaseCard
+                    nombre={p.titulo}
+                    descripcion={`${p.scaffold ?? "Clase en blanco"} · ${new Date(p.modificado).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}`}
                     onClick={() => alAbrir(p.carpeta)}
-                  >
-                    <span className="fila-titulo">{p.titulo}</span>
-                    <span className="fila-detalle">
-                      {p.scaffold ?? "Clase en blanco"} ·{" "}
-                      {new Date(p.modificado).toLocaleString("es-MX", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
+                  />
+                  <BaseButton
+                    label="🗑️"
                     className="borrar-proyecto"
-                    aria-label={`Borrar clase ${p.titulo}`}
-                    onClick={(event) => abrirDialogo(p, event.currentTarget)}
-                  >
-                    <span aria-hidden="true">🗑️</span>
-                  </button>
+                    ariaLabel={`Borrar clase ${p.titulo}`}
+                    onClickBtn={(event) => abrirDialogo(p, event.currentTarget)}
+                  />
                 </div>
               </li>
             ))}
