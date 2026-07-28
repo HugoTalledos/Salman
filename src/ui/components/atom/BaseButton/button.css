@@ -1,0 +1,27 @@
+.base-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.base-button:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+.base-button:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.base-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

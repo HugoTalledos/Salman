@@ -1,3 +1,4 @@
+import './button.css'
 interface BaseButtonProps {
   label: string
   onClickBtn: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -11,10 +12,12 @@ export function BaseButton ({
   className,
   ariaLabel,
 }: BaseButtonProps) {
+  const classes = ['base-button', className].filter(Boolean).join(' ')
+
   return (
     <button
       type="button"
-      className={className}
+      className={classes}
       aria-label={ariaLabel}
       onClick={onClickBtn}
     >
