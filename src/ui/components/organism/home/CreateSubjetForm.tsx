@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BaseInput } from "../atom/input";
-import { BaseSelect } from "../atom/select";
-import { BaseChip } from "../atom/BaseChip/chip";
-import { BaseButton } from "../atom/button";
-import { BaseMessage } from "../atom/BaseMessage/BaseMessage";
-import { api, type CatalogosClase, type InfoScaffold } from "../../api";
-import { LoadingMessage } from "../atom/BaseMessage/LoadingMessage";
-import { BaseCard } from "../atom/Card/card";
+import { BaseInput } from "../../atom/input";
+import { BaseSelect } from "../../atom/select";
+import { BaseChip } from "../../atom/BaseChip/chip";
+import { BaseButton } from "../../atom/button";
+import { BaseMessage } from "../../atom/BaseMessage/BaseMessage";
+import { api, type CatalogosClase, type InfoScaffold } from "../../../api";
+import { LoadingMessage } from "../../atom/BaseMessage/LoadingMessage";
+import { BaseCard } from "../../atom/Card/card";
 
 export function CreateSubjectForm({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [scaffolds, setScaffolds] = useState<InfoScaffold[]>([]);
