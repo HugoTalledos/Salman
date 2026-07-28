@@ -10,6 +10,7 @@ import {
   type InfoScaffold,
   type ResumenProyecto,
 } from "./api";
+import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
 
 export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
   const [proyectos, setProyectos] = useState<ResumenProyecto[] | null>(null);
@@ -278,9 +279,7 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
               />
             </div>
           )}
-          {errorObjetivos && (
-            <p className="mensaje-error" role="alert">{errorObjetivos}</p>
-          )}
+          { errorObjetivos && (<BaseMessage type="error" message={errorObjetivos}/>) }
           <div className="crear-opciones">
             {scaffolds.map((s) => (
               <button
@@ -311,12 +310,14 @@ export function Inicio({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
               </span>
             </button>
           </div>
-          {!formularioValido && (
-            <p className="crear-pista">
-              Completa el título, la materia y el grado para habilitar las opciones.
-            </p>
-          )}
-          {error && <p className="mensaje-error" role="alert">{error}</p>}
+          {
+            !formularioValido &&
+              (<BaseMessage
+                message="Completa el título, la materia y el grado para habilitar las opciones."
+                type="warning"
+              />)
+          }
+          { error && <BaseMessage type="error" message={error} /> }
         </section>
 
         <section className="inicio-lista">
