@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BaseInput } from "../../atom/input";
 import { BaseSelect } from "../../atom/select";
 import { BaseChip } from "../../atom/BaseChip/chip";
-import { BaseButton } from "../../atom/button";
+import { BaseButton } from "../../atom/BaseButton/button";
 import { BaseMessage } from "../../atom/BaseMessage/BaseMessage";
 import { api, type CatalogosClase, type InfoScaffold } from "../../../api";
 import { LoadingMessage } from "../../atom/BaseMessage/LoadingMessage";

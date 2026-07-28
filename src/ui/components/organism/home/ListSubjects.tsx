@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type ResumenProyecto } from "../../../api";
 import { BaseMessage } from "../../atom/BaseMessage/BaseMessage";
 import { LoadingMessage } from "../../atom/BaseMessage/LoadingMessage";
-import { BaseButton } from "../../atom/button";
+import { BaseButton } from "../../atom/BaseButton/button";
 import { BaseCard } from "../../atom/Card/card";
 
 export function ListSubjects({ alAbrir }: { alAbrir: (carpeta: string) => void }) {
