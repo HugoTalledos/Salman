@@ -155,15 +155,6 @@
   color: var(--guia);
 }
 
-.crear-pista {
-  color: var(--texto-suave);
-  font-size: 0.85rem;
-}
-
-.mensaje-error {
-  color: #b91c1c;
-}
-
 .inicio-lista ul {
   list-style: none;
   margin: 0;
