@@ -87,19 +87,19 @@ export function Asistente({ carpeta }: { carpeta: string }) {
       <div className="asistente-mensajes">
         {mensajes.length === 0 && !pensando && (
           <p className="asistente-bienvenida">
-            Conozco el fuente de esta clase. Pregúntame lo que quieras — y con el 💬 de
+            Pregúntame lo que quieras — y con el 💬 de
             cualquier bloque puedes señalarme la parte exacta de la que hablamos.
           </p>
         )}
-        {mensajes.map((m, i) => (
-          <div key={i} className={`burbuja burbuja-${m.rol}`}>
-            {m.etiquetas && (
-              <span className="burbuja-adjuntos">📎 {m.etiquetas.join(' · ')}</span>
+        {mensajes.map((message, idx) => (
+          <div key={idx} className={`burbuja burbuja-${message.rol}`}>
+            {message.etiquetas && (
+              <span className="burbuja-adjuntos">📎 {message.etiquetas.join(' · ')}</span>
             )}
-            {m.contenido}
-            {m.rol === 'asistente' && m.acciones && (
+            {message.contenido}
+            {message.rol === 'asistente' && message.acciones && (
               <AccionesAsistente
-                acciones={m.acciones}
+                acciones={message.acciones}
                 validar={(accion) => validateAction(accion)}
                 describir={(accion) => describeLocation(accion)}
                 aplicar={applyAction}
