@@ -3,6 +3,7 @@ import type { AccionAsistente } from '../server/asistencia/domain/entity/Respues
 import { AccionesAsistente } from './AccionesAsistente'
 import { api, type MensajeAsistente } from './api'
 import { useEditorDocumentCtx } from '../context/EditorDocumentContext'
+import { AttachmentChip } from './components/atom/AttachmentChip/AttachmentChip'
 
 type MensajeLocal = MensajeAsistente & {
   etiquetas?: string[]
@@ -112,17 +113,11 @@ export function Asistente({ carpeta }: { carpeta: string }) {
       {attachments.length > 0 && (
         <div className="asistente-adjuntos">
           {attachments.map(a => (
-            <span key={a.id} className="adjunto">
-              {a.etiqueta}
-              <button
-                type="button"
-                onClick={() => removeAttachment(a.id)}
-                title="Quitar"
-                aria-label={`Quitar ${a.etiqueta}`}
-              >
-                ✕
-              </button>
-            </span>
+            <AttachmentChip
+              key={a.id}
+              label={a.etiqueta}
+              onRemove={() => removeAttachment(a.id)}
+            />
           ))}
         </div>
       )}
