@@ -16,47 +16,12 @@ import {
   filterSuggestionItems,
   itemsMenuBloques,
 } from "./bloques";
+import { useAnchoPanel } from "../hooks/useAnchoPanel";
 import { EditorProvider } from "../context/EditorContext";
 import { EditorHeader } from "./components/organism/editor/EditorHeader";
 import { useEditorGuardado } from "../hooks/useEditorGuardado";
 import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
 import { LoadingMessage } from "./components/atom/BaseMessage/LoadingMessage";
-
-/**
- * Ancho de un panel lateral, arrastrable y recordado entre sesiones.
- * `direccion` indica hacia dónde crece el panel al mover el divisor a la
- * derecha: 1 para el panel izquierdo, -1 para el derecho.
- */
-function useAnchoPanel(clave: string, inicial: number, min: number, max: number) {
-  const [ancho, setAncho] = useState(() => {
-    const guardado = Number(localStorage.getItem(clave));
-    return guardado >= min && guardado <= max ? guardado : inicial;
-  });
-
-  useEffect(() => {
-    localStorage.setItem(clave, String(ancho));
-  }, [clave, ancho]);
-
-  const iniciarArrastre = (evento: React.PointerEvent, direccion: 1 | -1) => {
-    evento.preventDefault();
-    const origenX = evento.clientX;
-    const origenAncho = ancho;
-    const mover = (e: PointerEvent) => {
-      const nuevo = origenAncho + direccion * (e.clientX - origenX);
-      setAncho(Math.min(max, Math.max(min, nuevo)));
-    };
-    const soltar = () => {
-      window.removeEventListener("pointermove", mover);
-      window.removeEventListener("pointerup", soltar);
-      document.body.classList.remove("redimensionando");
-    };
-    document.body.classList.add("redimensionando");
-    window.addEventListener("pointermove", mover);
-    window.addEventListener("pointerup", soltar);
-  };
-
-  return [ancho, iniciarArrastre] as const;
-}
 
 
 export function Editor({ carpeta, alVolver }: { carpeta: string; alVolver: () => void }) {
@@ -79,16 +44,17 @@ export function Editor({ carpeta, alVolver }: { carpeta: string; alVolver: () =>
   return <EditorCargado carpeta={carpeta} claseInicial={clase} alVolver={alVolver} />;
 }
 
-function EditorCargado({
-  carpeta,
-  claseInicial,
-  alVolver,
-}: {
+interface EditorCargadoProps {
   carpeta: string;
   claseInicial: ClaseSalman;
   alVolver: () => void;
-}) {
+}
+
+function EditorCargado({ carpeta, claseInicial, alVolver }: EditorCargadoProps) {
   const [adjuntos, setAdjuntos] = useState<BloqueAdjunto[]>([]);
+  const [anchoIzq, arrastrarIzq] = useAnchoPanel("salman-panel-izq", 230, 160, 460);
+  const [anchoDer, arrastrarDer] = useAnchoPanel("salman-panel-der", 320, 240, 560);
+
   const adjuntar = (nuevo: BloqueAdjunto) =>
     setAdjuntos((previos) =>
       previos.some((a) => a.id === nuevo.id) || previos.length >= 6
@@ -96,8 +62,6 @@ function EditorCargado({
         : [...previos, nuevo],
     );
 
-  const [anchoIzq, arrastrarIzq] = useAnchoPanel("salman-panel-izq", 230, 160, 460);
-  const [anchoDer, arrastrarDer] = useAnchoPanel("salman-panel-der", 320, 240, 560);
 
   const contenidoInicial = useMemo(() => {
     const bloques = editorDesdeClase(claseInicial.bloques);
