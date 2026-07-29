@@ -3,13 +3,15 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock BlockNote — useCreateBlockNote is a heavy React hook; we isolate our logic
+const mockEditor = {
+  document: [],
+  replaceBlocks: vi.fn(),
+  setTextCursorPosition: vi.fn(),
+  updateBlock: vi.fn(),
+}
+
 vi.mock('@blocknote/react', () => ({
-  useCreateBlockNote: () => ({
-    document: [],
-    replaceBlocks: vi.fn(),
-    setTextCursorPosition: vi.fn(),
-    updateBlock: vi.fn(),
-  }),
+  useCreateBlockNote: () => mockEditor,
 }))
 
 vi.mock('../ui/bloques', () => ({
@@ -21,7 +23,14 @@ vi.mock('../mapping/mapeo', () => ({
   claseDesdeEditor: () => [],
 }))
 
+vi.mock('../ui/aplicarAccion', () => ({
+  aplicarAccion: vi.fn(),
+  validarAccion: vi.fn(),
+  describirUbicacion: vi.fn(),
+}))
+
 import { useEditorDocument } from './useEditorDocument'
+import { aplicarAccion } from '../ui/aplicarAccion'
 
 const claseInicial = {
   formato: 'salman' as const,
@@ -91,5 +100,46 @@ describe('useEditorDocument — handleChange increments changeCount', () => {
     expect(result.current.changeCount).toBe(1)
     act(() => result.current.handleChange())
     expect(result.current.changeCount).toBe(2)
+  })
+})
+
+describe('useEditorDocument — applyAction', () => {
+  beforeEach(() => {
+    mockEditor.replaceBlocks.mockReset()
+    mockEditor.setTextCursorPosition.mockReset()
+  })
+
+  it('calls replaceBlocks and setTextCursorPosition and increments changeCount on a valid action', () => {
+    vi.mocked(aplicarAccion).mockReturnValue({ ok: true, bloques: [], primerId: 'bloque-1' })
+
+    const { result } = renderHook(() => useEditorDocument({ claseInicial }))
+    const initialCount = result.current.changeCount
+
+    let ret: ReturnType<typeof result.current.applyAction> | undefined
+    act(() => {
+      ret = result.current.applyAction({} as never)
+    })
+
+    expect(ret).toEqual({ ok: true })
+    expect(mockEditor.replaceBlocks).toHaveBeenCalledOnce()
+    expect(mockEditor.setTextCursorPosition).toHaveBeenCalledWith('bloque-1', 'start')
+    expect(result.current.changeCount).toBe(initialCount + 1)
+  })
+
+  it('returns { ok: false } and does NOT increment changeCount on an invalid action', () => {
+    vi.mocked(aplicarAccion).mockReturnValue({ ok: false, error: 'ubicación inválida' })
+
+    const { result } = renderHook(() => useEditorDocument({ claseInicial }))
+    const initialCount = result.current.changeCount
+
+    let ret: ReturnType<typeof result.current.applyAction> | undefined
+    act(() => {
+      ret = result.current.applyAction({} as never)
+    })
+
+    expect(ret).toEqual({ ok: false, error: 'ubicación inválida' })
+    expect(mockEditor.replaceBlocks).not.toHaveBeenCalled()
+    expect(mockEditor.setTextCursorPosition).not.toHaveBeenCalled()
+    expect(result.current.changeCount).toBe(initialCount)
   })
 })

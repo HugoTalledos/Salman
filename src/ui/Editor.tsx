@@ -76,64 +76,96 @@ function EditorCargado({
   alVolver: () => void
 }) {
   const docCtx = useEditorDocument({ claseInicial })
-  const guardadoCtx = useEditorGuardado({ carpeta, claseInicial, alVolver })
 
   const [anchoIzq, arrastrarIzq] = useAnchoPanel('salman-panel-izq', 230, 160, 460)
   const [anchoDer, arrastrarDer] = useAnchoPanel('salman-panel-der', 320, 240, 560)
 
-  const { scaffold } = claseInicial
+  return (
+    <EditorDocumentProvider value={docCtx}>
+      <ContextoAdjuntar.Provider value={docCtx.attach}>
+        <EditorInner
+          carpeta={carpeta}
+          claseInicial={claseInicial}
+          alVolver={alVolver}
+          scaffold={claseInicial.scaffold}
+          anchoIzq={anchoIzq}
+          anchoDer={anchoDer}
+          arrastrarIzq={arrastrarIzq}
+          arrastrarDer={arrastrarDer}
+        />
+      </ContextoAdjuntar.Provider>
+    </EditorDocumentProvider>
+  )
+}
+
+function EditorInner({
+  carpeta,
+  claseInicial,
+  alVolver,
+  scaffold,
+  anchoIzq,
+  anchoDer,
+  arrastrarIzq,
+  arrastrarDer,
+}: {
+  carpeta: string
+  claseInicial: ClaseSalman
+  alVolver: () => void
+  scaffold: ClaseSalman['scaffold']
+  anchoIzq: number
+  anchoDer: number
+  arrastrarIzq: (evento: React.PointerEvent, direccion: 1 | -1) => void
+  arrastrarDer: (evento: React.PointerEvent, direccion: 1 | -1) => void
+}) {
+  const guardadoCtx = useEditorGuardado({ carpeta, claseInicial, alVolver })
   const { compilado, errorCompilar, versionArchivos } = guardadoCtx
 
   return (
-    <EditorDocumentProvider value={docCtx}>
-      <EditorProvider value={guardadoCtx}>
-        <ContextoCarpeta.Provider value={carpeta}>
-          <ContextoAdjuntar.Provider value={docCtx.attach}>
-            <div className="pantalla-editor">
-              <EditorHeader />
-              <div
-                className="editor-cuerpo"
-                style={{
-                  gridTemplateColumns: `${anchoIzq}px 5px minmax(0, 1fr) 5px ${anchoDer}px`,
-                }}
-              >
-                <ArchivosProyecto carpeta={carpeta} version={versionArchivos} />
-                <div
-                  className="divisor"
-                  role="separator"
-                  aria-orientation="vertical"
-                  onPointerDown={(e) => arrastrarIzq(e, 1)}
-                />
+    <EditorProvider value={guardadoCtx}>
+      <ContextoCarpeta.Provider value={carpeta}>
+        <div className="pantalla-editor">
+          <EditorHeader />
+          <div
+            className="editor-cuerpo"
+            style={{
+              gridTemplateColumns: `${anchoIzq}px 5px minmax(0, 1fr) 5px ${anchoDer}px`,
+            }}
+          >
+            <ArchivosProyecto carpeta={carpeta} version={versionArchivos} />
+            <div
+              className="divisor"
+              role="separator"
+              aria-orientation="vertical"
+              onPointerDown={(e) => arrastrarIzq(e, 1)}
+            />
 
-                <main className="editor-centro">
-                  {compilado && (
-                    <BaseMessage toast type="success">
-                      Artefactos generados en <code>recursos/</code>
-                    </BaseMessage>
-                  )}
-                  {errorCompilar && <BaseMessage type="error" message={errorCompilar} />}
-                  {scaffold && (
-                    <p className="editor-scaffold">
-                      Creada con <strong>{scaffold.nombre}</strong>
-                      {scaffold.modelo && <> · {scaffold.modelo}</>}
-                      {scaffold.metodo && <> · {scaffold.metodo}</>}
-                    </p>
-                  )}
-                  <EditorBlocks />
-                </main>
+            <main className="editor-centro">
+              {compilado && (
+                <BaseMessage toast type="success">
+                  Artefactos generados en <code>recursos/</code>
+                </BaseMessage>
+              )}
+              {errorCompilar && <BaseMessage type="error" message={errorCompilar} />}
+              {scaffold && (
+                <p className="editor-scaffold">
+                  Creada con <strong>{scaffold.nombre}</strong>
+                  {scaffold.modelo && <> · {scaffold.modelo}</>}
+                  {scaffold.metodo && <> · {scaffold.metodo}</>}
+                </p>
+              )}
+              <EditorBlocks />
+            </main>
 
-                <div
-                  className="divisor"
-                  role="separator"
-                  aria-orientation="vertical"
-                  onPointerDown={(e) => arrastrarDer(e, -1)}
-                />
-                <Asistente carpeta={carpeta} />
-              </div>
-            </div>
-          </ContextoAdjuntar.Provider>
-        </ContextoCarpeta.Provider>
-      </EditorProvider>
-    </EditorDocumentProvider>
+            <div
+              className="divisor"
+              role="separator"
+              aria-orientation="vertical"
+              onPointerDown={(e) => arrastrarDer(e, -1)}
+            />
+            <Asistente carpeta={carpeta} />
+          </div>
+        </div>
+      </ContextoCarpeta.Provider>
+    </EditorProvider>
   )
 }
