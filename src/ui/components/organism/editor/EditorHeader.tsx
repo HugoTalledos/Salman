@@ -1,7 +1,7 @@
 import { BaseButton } from '../../atom/BaseButton/button'
 import { BaseInput } from '../../atom/BaseInput/input'
-import { useEditorCtx } from './EditorContext'
-import type { EstadoGuardado } from './useEditorGuardado'
+import { useEditorCtx } from '../../../../context/EditorContext'
+import type { EstadoGuardado } from '../../../../hooks/useEditorGuardado'
 
 const TEXTO_ESTADO: Record<EstadoGuardado, string> = {
   guardado: 'Guardado',
