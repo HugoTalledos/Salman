@@ -1,36 +1,28 @@
-import "@blocknote/core/fonts/inter.css";
-import "@blocknote/mantine/style.css";
-import { SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
-import { useEffect, useMemo, useState } from "react";
-import { type BloqueEditor, editorDesdeClase } from "../mapping/mapeo";
-import type { ClaseSalman } from "../server/clases/domain/entity/Clase";
-import { api } from "./api";
-import { ArchivosProyecto } from "./ArchivosProyecto";
-import { Asistente } from "./Asistente";
-import {
-  type BloqueAdjunto,
-  ContextoAdjuntar,
-  ContextoCarpeta,
-  esquemaEditor,
-  filterSuggestionItems,
-  itemsMenuBloques,
-} from "./bloques";
-import { useAnchoPanel } from "../hooks/useAnchoPanel";
-import { EditorProvider } from "../context/EditorContext";
-import { EditorHeader } from "./components/organism/editor/EditorHeader";
-import { useEditorGuardado } from "../hooks/useEditorGuardado";
-import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
-import { LoadingMessage } from "./components/atom/BaseMessage/LoadingMessage";
-
+import '@blocknote/core/fonts/inter.css'
+import '@blocknote/mantine/style.css'
+import { useEffect, useState } from 'react'
+import type { ClaseSalman } from '../server/clases/domain/entity/Clase'
+import { api } from './api'
+import { ArchivosProyecto } from './ArchivosProyecto'
+import { Asistente } from './Asistente'
+import { ContextoAdjuntar, ContextoCarpeta } from './bloques'
+import { EditorDocumentProvider } from '../context/EditorDocumentContext'
+import { EditorProvider } from '../context/EditorContext'
+import { EditorHeader } from './components/organism/editor/EditorHeader'
+import { EditorBlocks } from './components/organism/editor/EditorBlocks'
+import { useEditorDocument } from '../hooks/useEditorDocument'
+import { useEditorGuardado } from '../hooks/useEditorGuardado'
+import { useAnchoPanel } from '../hooks/useAnchoPanel'
+import { BaseMessage } from './components/atom/BaseMessage/BaseMessage'
+import { LoadingMessage } from './components/atom/BaseMessage/LoadingMessage'
 
 export function Editor({ carpeta, alVolver }: { carpeta: string; alVolver: () => void }) {
-  const [clase, setClase] = useState<ClaseSalman | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [clase, setClase] = useState<ClaseSalman | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.leerProyecto(carpeta).then(setClase, (e: Error) => setError(e.message));
-  }, [carpeta]);
+    api.leerProyecto(carpeta).then(setClase, (e: Error) => setError(e.message))
+  }, [carpeta])
 
   if (error) {
     return (
@@ -38,59 +30,68 @@ export function Editor({ carpeta, alVolver }: { carpeta: string; alVolver: () =>
         <p>{error}</p>
         <button type="button" onClick={alVolver}>← Volver al inicio</button>
       </div>
-    );
+    )
   }
-  if (!clase) return <LoadingMessage text="Cargando…" />;
-  return <EditorCargado carpeta={carpeta} claseInicial={clase} alVolver={alVolver} />;
+  if (!clase) return <LoadingMessage text="Cargando…" />
+  return <EditorCargado carpeta={carpeta} claseInicial={clase} alVolver={alVolver} />
 }
 
-interface EditorCargadoProps {
-  carpeta: string;
-  claseInicial: ClaseSalman;
-  alVolver: () => void;
-}
+function EditorCargado({
+  carpeta,
+  claseInicial,
+  alVolver,
+}: {
+  carpeta: string
+  claseInicial: ClaseSalman
+  alVolver: () => void
+}) {
+  const docCtx = useEditorDocument({ claseInicial })
 
-function EditorCargado({ carpeta, claseInicial, alVolver }: EditorCargadoProps) {
-  const [adjuntos, setAdjuntos] = useState<BloqueAdjunto[]>([]);
-  const [anchoIzq, arrastrarIzq] = useAnchoPanel("salman-panel-izq", 230, 160, 460);
-  const [anchoDer, arrastrarDer] = useAnchoPanel("salman-panel-der", 320, 240, 560);
-
-  const adjuntar = (nuevo: BloqueAdjunto) =>
-    setAdjuntos((previos) =>
-      previos.some((a) => a.id === nuevo.id) || previos.length >= 6
-        ? previos
-        : [...previos, nuevo],
-    );
-
-
-  const contenidoInicial = useMemo(() => {
-    const bloques = editorDesdeClase(claseInicial.bloques);
-    return bloques.length > 0
-      ? bloques
-      : [
-          {
-            id: crypto.randomUUID(),
-            type: "texto",
-            props: { target: "ambos" },
-            content: [],
-            children: [],
-          } satisfies BloqueEditor,
-        ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const editor = useCreateBlockNote({
-    schema: esquemaEditor,
-    initialContent: contenidoInicial as unknown as (typeof esquemaEditor.PartialBlock)[],
-  });
-
-  const editorCtx = useEditorGuardado({ carpeta, claseInicial, alVolver, editor });
-  const { compilado, errorCompilar, versionArchivos, manejarCambio, confirmarAccion } = editorCtx;
-
-  const { scaffold } = claseInicial;
+  const [anchoIzq, arrastrarIzq] = useAnchoPanel('salman-panel-izq', 230, 160, 460)
+  const [anchoDer, arrastrarDer] = useAnchoPanel('salman-panel-der', 320, 240, 560)
 
   return (
-    <EditorProvider value={editorCtx}>
+    <EditorDocumentProvider value={docCtx}>
+      <ContextoAdjuntar.Provider value={docCtx.attach}>
+        <EditorInner
+          carpeta={carpeta}
+          claseInicial={claseInicial}
+          alVolver={alVolver}
+          scaffold={claseInicial.scaffold}
+          anchoIzq={anchoIzq}
+          anchoDer={anchoDer}
+          arrastrarIzq={arrastrarIzq}
+          arrastrarDer={arrastrarDer}
+        />
+      </ContextoAdjuntar.Provider>
+    </EditorDocumentProvider>
+  )
+}
+
+function EditorInner({
+  carpeta,
+  claseInicial,
+  alVolver,
+  scaffold,
+  anchoIzq,
+  anchoDer,
+  arrastrarIzq,
+  arrastrarDer,
+}: {
+  carpeta: string
+  claseInicial: ClaseSalman
+  alVolver: () => void
+  scaffold: ClaseSalman['scaffold']
+  anchoIzq: number
+  anchoDer: number
+  arrastrarIzq: (evento: React.PointerEvent, direccion: 1 | -1) => void
+  arrastrarDer: (evento: React.PointerEvent, direccion: 1 | -1) => void
+}) {
+  const guardadoCtx = useEditorGuardado({ carpeta, claseInicial, alVolver })
+  const { compilado, errorCompilar, versionArchivos } = guardadoCtx
+
+  return (
+    <EditorProvider value={guardadoCtx}>
       <ContextoCarpeta.Provider value={carpeta}>
         <div className="pantalla-editor">
           <EditorHeader />
@@ -109,35 +110,20 @@ function EditorCargado({ carpeta, claseInicial, alVolver }: EditorCargadoProps) 
             />
 
             <main className="editor-centro">
-              <ContextoAdjuntar.Provider value={adjuntar}>
-                {
-                  compilado && (
-                    <BaseMessage toast type="success">
-                      Artefactos generados en <code>recursos/</code>
-                    </BaseMessage>
-                )}
-                { errorCompilar && <BaseMessage type="error" message={errorCompilar} /> }
-                {scaffold && (
-                  <p className="editor-scaffold">
-                    Creada con <strong>{scaffold.nombre}</strong>
-                    {scaffold.modelo && <> · {scaffold.modelo}</>}
-                    {scaffold.metodo && <> · {scaffold.metodo}</>}
-                  </p>
-                )}
-                <BlockNoteView
-                  editor={editor}
-                  theme="light"
-                  slashMenu={false}
-                  onChange={manejarCambio}
-                >
-                  <SuggestionMenuController
-                    triggerCharacter="/"
-                    getItems={async (query) =>
-                      filterSuggestionItems(itemsMenuBloques(editor), query)
-                    }
-                  />
-                </BlockNoteView>
-              </ContextoAdjuntar.Provider>
+              {compilado && (
+                <BaseMessage toast type="success">
+                  Artefactos generados en <code>recursos/</code>
+                </BaseMessage>
+              )}
+              {errorCompilar && <BaseMessage type="error" message={errorCompilar} />}
+              {scaffold && (
+                <p className="editor-scaffold">
+                  Creada con <strong>{scaffold.nombre}</strong>
+                  {scaffold.modelo && <> · {scaffold.modelo}</>}
+                  {scaffold.metodo && <> · {scaffold.metodo}</>}
+                </p>
+              )}
+              <EditorBlocks />
             </main>
 
             <div
@@ -146,19 +132,10 @@ function EditorCargado({ carpeta, claseInicial, alVolver }: EditorCargadoProps) 
               aria-orientation="vertical"
               onPointerDown={(e) => arrastrarDer(e, -1)}
             />
-            <Asistente
-              carpeta={carpeta}
-              adjuntos={adjuntos}
-              quitarAdjunto={(id) =>
-                setAdjuntos((previos) => previos.filter((a) => a.id !== id))
-              }
-              limpiarAdjuntos={() => setAdjuntos([])}
-              documentoActual={() => editor.document as unknown as BloqueEditor[]}
-              aplicarAccionDocumento={confirmarAccion}
-            />
+            <Asistente carpeta={carpeta} />
           </div>
         </div>
       </ContextoCarpeta.Provider>
     </EditorProvider>
-  );
+  )
 }

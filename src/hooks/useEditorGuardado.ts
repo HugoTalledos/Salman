@@ -1,23 +1,22 @@
-import { useRef, useState } from "react"
-import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente"
-import { type BloqueEditor, claseDesdeEditor } from "../mapping/mapeo"
-import type { ClaseSalman, Target } from "../server/clases/domain/entity/Clase"
-import { api } from "../ui/api"
-import { aplicarAccion } from "../ui/aplicarAccion"
-import { type EditorSalman, esquemaEditor } from "../ui/bloques"
+import { useEffect, useRef, useState } from 'react'
+import { type BloqueEditor, claseDesdeEditor } from '../mapping/mapeo'
+import type { ClaseSalman } from '../server/clases/domain/entity/Clase'
+import { api } from '../ui/api'
+import { useEditorDocumentCtx } from '../context/EditorDocumentContext'
 
-export type EstadoGuardado = "guardado" | "pendiente" | "guardando" | "error"
+export type EstadoGuardado = 'guardado' | 'pendiente' | 'guardando' | 'error'
 
 interface Params {
   carpeta: string
   claseInicial: ClaseSalman
   alVolver: () => void
-  editor: EditorSalman
 }
 
-export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: Params) {
+export function useEditorGuardado({ carpeta, claseInicial, alVolver }: Params) {
+  const { editor, changeCount } = useEditorDocumentCtx()
+
   const [titulo, setTitulo] = useState(claseInicial.titulo)
-  const [estado, setEstado] = useState<EstadoGuardado>("guardado")
+  const [estado, setEstado] = useState<EstadoGuardado>('guardado')
   const [compilado, setCompilado] = useState<{ guia: string; material: string } | null>(null)
   const [errorCompilar, setErrorCompilar] = useState<string | null>(null)
   const [versionArchivos, setVersionArchivos] = useState(0)
@@ -27,7 +26,7 @@ export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: P
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const guardarAhora = async () => {
-    setEstado("guardando")
+    setEstado('guardando')
     try {
       const bloques = claseDesdeEditor(editor.document as unknown as BloqueEditor[])
       const guardada = await api.guardarProyecto(carpeta, {
@@ -36,17 +35,24 @@ export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: P
         bloques,
       })
       claseRef.current = guardada
-      setEstado("guardado")
+      setEstado('guardado')
     } catch {
-      setEstado("error")
+      setEstado('error')
     }
   }
 
   const programarGuardado = () => {
-    setEstado("pendiente")
+    setEstado('pendiente')
     clearTimeout(timerRef.current)
     timerRef.current = setTimeout(guardarAhora, 800)
   }
+
+  // Trigger save whenever the document signals a change
+  const programarGuardadoRef = useRef(programarGuardado)
+  useEffect(() => { programarGuardadoRef.current = programarGuardado })
+  useEffect(() => {
+    if (changeCount > 0) programarGuardadoRef.current()
+  }, [changeCount])
 
   const onTituloChange = (text: string) => {
     setTitulo(text)
@@ -54,28 +60,9 @@ export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: P
     programarGuardado()
   }
 
-  const manejarCambio = () => {
-    normalizarParagraphs(editor)
-    programarGuardado()
-  }
-
-  const confirmarAccion = (accion: AccionAsistente) => {
-    const actual = editor.document as unknown as BloqueEditor[]
-    const resultado = aplicarAccion(actual, accion)
-    if (!resultado.ok) return resultado
-
-    editor.replaceBlocks(
-      editor.document.map(({ id }) => id),
-      resultado.bloques as unknown as (typeof esquemaEditor.PartialBlock)[],
-    )
-    editor.setTextCursorPosition(resultado.primerId, "start")
-    programarGuardado()
-    return { ok: true as const }
-  }
-
   const volver = async () => {
     clearTimeout(timerRef.current)
-    if (estado === "pendiente" || estado === "guardando") await guardarAhora()
+    if (estado === 'pendiente' || estado === 'guardando') await guardarAhora()
     alVolver()
   }
 
@@ -85,7 +72,7 @@ export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: P
     await guardarAhora()
     try {
       setCompilado(await api.compilar(carpeta))
-      setVersionArchivos((v) => v + 1)
+      setVersionArchivos(v => v + 1)
     } catch (e) {
       setErrorCompilar((e as Error).message)
     }
@@ -100,23 +87,5 @@ export function useEditorGuardado({ carpeta, claseInicial, alVolver, editor }: P
     onTituloChange,
     volver,
     compilar,
-    manejarCambio,
-    confirmarAccion,
   }
-}
-
-function normalizarParagraphs(editor: EditorSalman) {
-  const visitar = (
-    bloques: readonly (typeof editor.document)[number][],
-    targetFase: Target,
-  ) => {
-    for (const bloque of bloques) {
-      if (bloque.type === "paragraph") {
-        editor.updateBlock(bloque, { type: "texto", props: { target: targetFase } })
-      }
-      const target = bloque.type === "fase" ? (bloque.props.target as Target) : targetFase
-      visitar(bloque.children, target)
-    }
-  }
-  visitar(editor.document, "ambos")
 }
