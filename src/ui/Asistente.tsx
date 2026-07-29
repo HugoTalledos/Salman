@@ -4,6 +4,8 @@ import { AccionesAsistente } from './AccionesAsistente'
 import { api, type MensajeAsistente } from './api'
 import { useEditorDocumentCtx } from '../context/EditorDocumentContext'
 import { AttachmentChip } from './components/atom/AttachmentChip/AttachmentChip'
+import { LoadingMessage } from './components/atom/BaseMessage/LoadingMessage'
+import { BaseMessage } from './components/atom/BaseMessage/BaseMessage'
 
 type MensajeLocal = MensajeAsistente & {
   etiquetas?: string[]
@@ -105,8 +107,8 @@ export function Asistente({ carpeta }: { carpeta: string }) {
             )}
           </div>
         ))}
-        {pensando && <div className="burbuja burbuja-asistente pensando">Pensando…</div>}
-        {error && <p className="mensaje-error asistente-error">{error}</p>}
+        {pensando && <div className="burbuja burbuja-asistente pensando"><LoadingMessage text="Pensando..." /></div>}
+        {error && <BaseMessage type="error" message={error} />}
         <div ref={finRef} />
       </div>
 
