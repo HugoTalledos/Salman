@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react"
-import type { useEditorGuardado } from "./useEditorGuardado"
+import type { useEditorGuardado } from "../hooks/useEditorGuardado"
 
 type EditorContextValue = ReturnType<typeof useEditorGuardado>
 
