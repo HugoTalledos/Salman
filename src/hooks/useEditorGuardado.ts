@@ -1,10 +1,10 @@
 import { useRef, useState } from "react"
-import type { AccionAsistente } from "../../../../server/asistencia/domain/entity/RespuestaAsistente"
-import { type BloqueEditor, claseDesdeEditor } from "../../../../mapping/mapeo"
-import type { ClaseSalman, Target } from "../../../../server/clases/domain/entity/Clase"
-import { api } from "../../../api"
-import { aplicarAccion } from "../../../aplicarAccion"
-import { type EditorSalman, esquemaEditor } from "../../../bloques"
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente"
+import { type BloqueEditor, claseDesdeEditor } from "../mapping/mapeo"
+import type { ClaseSalman, Target } from "../server/clases/domain/entity/Clase"
+import { api } from "../ui/api"
+import { aplicarAccion } from "../ui/aplicarAccion"
+import { type EditorSalman, esquemaEditor } from "../ui/bloques"
 
 export type EstadoGuardado = "guardado" | "pendiente" | "guardando" | "error"
 
