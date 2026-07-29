@@ -16,9 +16,9 @@ import {
   filterSuggestionItems,
   itemsMenuBloques,
 } from "./bloques";
-import { EditorProvider } from "./components/organism/editor/EditorContext";
+import { EditorProvider } from "../context/EditorContext";
 import { EditorHeader } from "./components/organism/editor/EditorHeader";
-import { useEditorGuardado } from "./components/organism/editor/useEditorGuardado";
+import { useEditorGuardado } from "../hooks/useEditorGuardado";
 import { BaseMessage } from "./components/atom/BaseMessage/BaseMessage";
 import { LoadingMessage } from "./components/atom/BaseMessage/LoadingMessage";
 
