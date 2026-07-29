@@ -6,6 +6,9 @@ import type { RespuestaAsistente } from "../server/asistencia/domain/entity/Resp
 import type { BloqueEditor } from "../mapping/mapeo";
 import { Asistente } from "./Asistente";
 import { api } from "./api";
+import { validarAccion, describirUbicacion } from "./aplicarAccion";
+import * as EditorDocumentContextModule from "../context/EditorDocumentContext";
+import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
 
 Element.prototype.scrollIntoView = vi.fn();
 
@@ -82,16 +85,22 @@ function renderizarAsistente(
 ) {
   const aplicarAccionDocumento = vi.fn(() => ({ ok: true } as const));
   const limpiarAdjuntos = vi.fn();
-  render(
-    <Asistente
-      carpeta="mi-clase"
-      adjuntos={[]}
-      quitarAdjunto={vi.fn()}
-      limpiarAdjuntos={limpiarAdjuntos}
-      documentoActual={documentoActual}
-      aplicarAccionDocumento={aplicarAccionDocumento}
-    />,
-  );
+
+  vi.spyOn(EditorDocumentContextModule, "useEditorDocumentCtx").mockReturnValue({
+    editor: {} as never,
+    currentDocument: documentoActual,
+    handleChange: vi.fn(),
+    changeCount: 0,
+    attachments: [],
+    attach: vi.fn(),
+    removeAttachment: vi.fn(),
+    clearAttachments: limpiarAdjuntos,
+    applyAction: aplicarAccionDocumento,
+    validateAction: (accion: unknown) => validarAccion(documentoActual(), accion),
+    describeLocation: (accion: AccionAsistente) => describirUbicacion(documentoActual(), accion),
+  });
+
+  render(<Asistente carpeta="mi-clase" />);
   return { aplicarAccionDocumento, limpiarAdjuntos };
 }
 

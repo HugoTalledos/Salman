@@ -1,69 +1,52 @@
-import { useEffect, useRef, useState } from "react";
-import type { AccionAsistente } from "../server/asistencia/domain/entity/RespuestaAsistente";
-import type { BloqueEditor } from "../mapping/mapeo";
-import { AccionesAsistente } from "./AccionesAsistente";
-import { describirUbicacion, validarAccion } from "./aplicarAccion";
-import { api, type MensajeAsistente } from "./api";
-import type { BloqueAdjunto } from "./bloques";
+import { useEffect, useRef, useState } from 'react'
+import type { AccionAsistente } from '../server/asistencia/domain/entity/RespuestaAsistente'
+import { AccionesAsistente } from './AccionesAsistente'
+import { api, type MensajeAsistente } from './api'
+import { useEditorDocumentCtx } from '../context/EditorDocumentContext'
 
-/** Un mensaje local: lo que viaja a la API más las etiquetas para mostrar. */
 type MensajeLocal = MensajeAsistente & {
-  etiquetas?: string[];
-  acciones?: AccionAsistente[];
-};
+  etiquetas?: string[]
+  acciones?: AccionAsistente[]
+}
 
-/**
- * Barra lateral derecha: conversación con el Asistente Salman.
- * El historial vive en la sesión de la UI; el servidor recibe la conversación
- * completa (con los ids de bloques señalados) y le entrega al modelo el
- * fuente de la clase como contexto.
- */
-export function Asistente({
-  carpeta,
-  adjuntos,
-  quitarAdjunto,
-  limpiarAdjuntos,
-  documentoActual,
-  aplicarAccionDocumento,
-}: {
-  carpeta: string;
-  /** Bloques señalados desde el editor, pendientes de enviar. */
-  adjuntos: BloqueAdjunto[];
-  quitarAdjunto: (id: string) => void;
-  limpiarAdjuntos: () => void;
-  documentoActual: () => BloqueEditor[];
-  aplicarAccionDocumento: (
-    accion: AccionAsistente,
-  ) => { ok: true } | { ok: false; error: string };
-}) {
-  const [mensajes, setMensajes] = useState<MensajeLocal[]>([]);
-  const [borrador, setBorrador] = useState("");
-  const [pensando, setPensando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const finRef = useRef<HTMLDivElement>(null);
+export function Asistente({ carpeta }: { carpeta: string }) {
+  const {
+    attachments,
+    removeAttachment,
+    clearAttachments,
+    applyAction,
+    validateAction,
+    describeLocation,
+  } = useEditorDocumentCtx()
+
+  const [mensajes, setMensajes] = useState<MensajeLocal[]>([])
+  const [borrador, setBorrador] = useState('')
+  const [pensando, setPensando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const finRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    finRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [mensajes, pensando]);
+    finRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mensajes, pensando])
 
   const enviar = async () => {
-    const contenido = borrador.trim();
-    if (!contenido || pensando) return;
+    const contenido = borrador.trim()
+    if (!contenido || pensando) return
     const nuevo: MensajeLocal = {
-      rol: "usuario",
+      rol: 'usuario',
       contenido,
-      ...(adjuntos.length
+      ...(attachments.length
         ? {
-            bloques: adjuntos.map((a) => a.id),
-            etiquetas: adjuntos.map((a) => a.etiqueta),
+            bloques: attachments.map(a => a.id),
+            etiquetas: attachments.map(a => a.etiqueta),
           }
         : {}),
-    };
-    const conversacion = [...mensajes, nuevo];
-    setMensajes(conversacion);
-    setBorrador("");
-    setError(null);
-    setPensando(true);
+    }
+    const conversacion = [...mensajes, nuevo]
+    setMensajes(conversacion)
+    setBorrador('')
+    setError(null)
+    setPensando(true)
     try {
       const respuesta = await api.asistente(
         carpeta,
@@ -72,24 +55,24 @@ export function Asistente({
           contenido,
           ...(bloques?.length ? { bloques } : {}),
         })),
-      );
+      )
       setMensajes([
         ...conversacion,
         {
-          rol: "asistente",
+          rol: 'asistente',
           contenido: respuesta.mensaje,
-          ...(respuesta.tipo === "accionable" ? { acciones: respuesta.acciones } : {}),
+          ...(respuesta.tipo === 'accionable' ? { acciones: respuesta.acciones } : {}),
         },
-      ]);
-      limpiarAdjuntos(); // solo cuando el mensaje llegó: si falla, se conservan
+      ])
+      clearAttachments()
     } catch (e) {
-      setError((e as Error).message);
-      setMensajes(mensajes); // la pregunta vuelve al borrador
-      setBorrador(contenido);
+      setError((e as Error).message)
+      setMensajes(mensajes)
+      setBorrador(contenido)
     } finally {
-      setPensando(false);
+      setPensando(false)
     }
-  };
+  }
 
   return (
     <aside className="asistente" aria-label="Asistente Salman">
@@ -108,15 +91,15 @@ export function Asistente({
         {mensajes.map((m, i) => (
           <div key={i} className={`burbuja burbuja-${m.rol}`}>
             {m.etiquetas && (
-              <span className="burbuja-adjuntos">📎 {m.etiquetas.join(" · ")}</span>
+              <span className="burbuja-adjuntos">📎 {m.etiquetas.join(' · ')}</span>
             )}
             {m.contenido}
-            {m.rol === "asistente" && m.acciones && (
+            {m.rol === 'asistente' && m.acciones && (
               <AccionesAsistente
                 acciones={m.acciones}
-                validar={(accion) => validarAccion(documentoActual(), accion)}
-                describir={(accion) => describirUbicacion(documentoActual(), accion)}
-                aplicar={aplicarAccionDocumento}
+                validar={(accion) => validateAction(accion)}
+                describir={(accion) => describeLocation(accion)}
+                aplicar={applyAction}
               />
             )}
           </div>
@@ -126,14 +109,14 @@ export function Asistente({
         <div ref={finRef} />
       </div>
 
-      {adjuntos.length > 0 && (
+      {attachments.length > 0 && (
         <div className="asistente-adjuntos">
-          {adjuntos.map((a) => (
+          {attachments.map(a => (
             <span key={a.id} className="adjunto">
               {a.etiqueta}
               <button
                 type="button"
-                onClick={() => quitarAdjunto(a.id)}
+                onClick={() => removeAttachment(a.id)}
                 title="Quitar"
                 aria-label={`Quitar ${a.etiqueta}`}
               >
@@ -146,17 +129,12 @@ export function Asistente({
 
       <form
         className="asistente-entrada"
-        onSubmit={(e) => {
-          e.preventDefault();
-          enviar();
-        }}
+        onSubmit={(e) => { e.preventDefault(); enviar() }}
       >
         <input
           value={borrador}
           onChange={(e) => setBorrador(e.target.value)}
-          placeholder={
-            adjuntos.length ? "Pregunta sobre lo señalado…" : "Pregúntame algo…"
-          }
+          placeholder={attachments.length ? 'Pregunta sobre lo señalado…' : 'Pregúntame algo…'}
           disabled={pensando}
           aria-label="Mensaje para el asistente"
         />
@@ -165,5 +143,5 @@ export function Asistente({
         </button>
       </form>
     </aside>
-  );
+  )
 }
